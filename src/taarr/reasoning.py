@@ -8,14 +8,14 @@ configuration values in ResolverPolicy, never hidden fallbacks.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from datetime import date
-from typing import Any, Iterable
+from typing import Any
 
 from .models import (
     ClauseVersion,
     Condition,
     ConditionEvaluation,
-    DependencyRule,
     ExceptionEffect,
     ExceptionRule,
     MissingFactsPolicy,
@@ -78,7 +78,7 @@ def evaluate_condition(condition: Condition, profile: dict[str, Any]) -> Conditi
     is FALSE. Malformed or unsupported predicates raise ValueError.
     """
     if not isinstance(condition, dict):
-        raise ValueError("A condition must be a JSON object")
+        raise TypeError("A condition must be a JSON object")
 
     if "all_of" in condition:
         children = condition["all_of"]
