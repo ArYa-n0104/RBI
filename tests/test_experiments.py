@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from taarr.experiments import run_experiments
+from taarr.catalog import load_catalog
+from taarr.experiments import _catalog_variant, run_experiments
 from taarr.models import (
     MissingFactsPolicy,
     NoVersionPolicy,
@@ -65,3 +66,12 @@ def test_runner_scores_only_gold_verified_items(tmp_path):
     assert full["gold_n"] == 1
     assert full["matched_n"] == 1
     assert full["accuracy"] in {0.0, 1.0}
+
+
+
+def test_all_experiment_variants_provide_obligation_mapping():
+    catalog = load_catalog("data/obligations/obligations.jsonl")
+    for mode in ("full", "no_temporal", "no_exceptions_dependencies"):
+        variant = _catalog_variant(catalog, mode)
+        assert isinstance(variant, dict)
+        assert set(variant) == set(catalog.obligations)
