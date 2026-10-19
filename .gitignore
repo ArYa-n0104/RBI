@@ -33,3 +33,7 @@ data/private/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Generated local experiment outputs
+reports/experiments/
+reports/provenance_audit/
