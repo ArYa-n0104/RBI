@@ -9,7 +9,6 @@ from __future__ import annotations
 import argparse
 import re
 import sys
-from collections.abc import Set
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import ClassVar
@@ -18,10 +17,10 @@ from typing import ClassVar
 class _StructuredHTMLText(HTMLParser):
     """Simple structure-aware HTML text extractor without retaining page chrome."""
 
-    _skip_tags: ClassVar[Set[str]] = frozenset(
+    _skip_tags: ClassVar[frozenset[str]] = frozenset(
         {"script", "style", "noscript", "svg", "nav", "header", "footer"}
     )
-    _block_tags: ClassVar[Set[str]] = frozenset(
+    _block_tags: ClassVar[frozenset[str]] = frozenset(
         {
             "article", "section", "h1", "h2", "h3", "h4", "h5", "p",
             "li", "tr", "td", "th", "br", "main",
