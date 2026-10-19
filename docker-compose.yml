@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: taarr-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: taarr
+      POSTGRES_USER: taarr
+      POSTGRES_PASSWORD: ${TAARR_POSTGRES_PASSWORD:-taarr_local_dev_only}
+    ports:
+      - "5432:5432"
+    volumes:
+      - taarr_postgres_data:/var/lib/postgresql/data
+      - ./db/postgres/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taarr -d taarr"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  neo4j:
+    image: neo4j:5-community
+    container_name: taarr-neo4j
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: neo4j/${TAARR_NEO4J_PASSWORD:-taarr_local_dev_only}
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 512m
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - taarr_neo4j_data:/data
+      - ./db/neo4j/001_constraints.cypher:/var/lib/neo4j/import/001_constraints.cypher:ro
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p ${TAARR_NEO4J_PASSWORD:-taarr_local_dev_only} 'RETURN 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+volumes:
+  taarr_postgres_data:
+  taarr_neo4j_data:
