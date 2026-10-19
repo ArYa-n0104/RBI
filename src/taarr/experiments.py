@@ -177,7 +177,7 @@ def main(argv: list[str] | None = None) -> int:
         result = run_experiments(args.benchmark, args.catalog, policy)
         destination = Path(args.output)
         destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_text(json.dumps(result, indent=2) + "\\n", encoding="utf-8")
+        destination.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
         print(json.dumps({
             "status": "completed",
             "output": str(destination),
