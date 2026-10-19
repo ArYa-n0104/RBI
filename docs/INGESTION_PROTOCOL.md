@@ -40,3 +40,30 @@ A null `effective_to` is an open interval only after the latest relevant source 
 - `data/benchmark/benchmark.jsonl` is reserved for adjudicated, gold-verified items used for reported evaluation.
 
 The draft file contains three candidate examples for applicability, non-applicability and missing-fact abstention over the same target clause. A fourth Conflict case is deliberately absent: the source review has not established a genuine unreconciled conflict, and artificially inventing one would undermine the study.
+
+
+## Reproducible local source tooling
+
+The repository includes `taarr.sources` to fetch one or more source register records and `taarr.extract` to convert saved source pages/PDFs to text for annotation.
+
+List the official records:
+
+```bash
+python -m taarr.sources list
+```
+
+Fetch the first RBI KYC candidate sources:
+
+```bash
+python -m taarr.sources fetch RBI-KYC-CONSOLIDATED RBI-KYC-AMEND-2025-06-12
+```
+
+The output prints the hashed local filename. The source snapshot is kept under `data/raw/<source_id>/` and is excluded from Git. A JSONL acquisition manifest records its URL and SHA-256. The download utility follows only HTTPS URLs under `rbi.org.in` and `sebi.gov.in` and their subdomains; third-party redirects are rejected.
+
+Extract text using the exact path printed by the fetch command:
+
+```bash
+python -m taarr.extract "data/raw/RBI-KYC-AMEND-2025-06-12/<hash>.html" --output data/extracted/RBI-KYC-AMEND-2025-06-12.txt
+```
+
+Install the optional PDF dependency with `pip install -e ".[dev,ingest]"`. Text extraction is a human-review aid, not a legal clause segmenter or automatic truth-labeler. Verify wording, subsection IDs, effective dates, amendment links, and relevant definitions against the official source before promotion to gold data.
