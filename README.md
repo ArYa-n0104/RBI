@@ -95,11 +95,13 @@ python -m pip install --upgrade pip
 pip install -e ".[dev,ingest]"
 ```
 
-Copy `.env.example` to `.env`. Before using the resolution and benchmark endpoints, select the three policy values described in [Decision log](docs/DECISIONS.md). The code intentionally does not choose them for you. The accepted values are:
+Copy `.env.example` to `.env`. The example now contains **provisional local-development settings** so you can run the UI and exercise the resolver:
 
-- `TAARR_NO_VERSION_POLICY=DROP` or `NOT_APPLICABLE`
-- `TAARR_MISSING_FACTS_POLICY=STRICT_MISSING` or `KLEENE`
-- `TAARR_UNKNOWN_PRECEDENCE_POLICY=INDETERMINATE_FIRST` or `DEFINITIVE_RULES_FIRST`
+- `TAARR_NO_VERSION_POLICY=NOT_APPLICABLE`
+- `TAARR_MISSING_FACTS_POLICY=KLEENE`
+- `TAARR_UNKNOWN_PRECEDENCE_POLICY=DEFINITIVE_RULES_FIRST`
+
+These are explicit testing settings, **not final research/legal decisions**. Review [Decision log](docs/DECISIONS.md), get the project owner/supervisor to approve the unresolved D-001 and D-003 semantics, and version that decision before creating gold benchmark labels. For an existing checkout, `git pull` does not overwrite your local `.env`; copy the three values above into it manually if needed.
 
 Then start the API:
 
