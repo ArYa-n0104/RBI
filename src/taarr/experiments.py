@@ -16,9 +16,9 @@ import time
 from dataclasses import replace
 from datetime import UTC, date, datetime
 from pathlib import Path
+from typing import Any
 
 from dotenv import load_dotenv
-from typing import Any
 
 from .catalog import load_catalog
 from .evaluate import read_jsonl, score
