@@ -20,8 +20,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
-      - name: Validate regulatory benchmark ledger
+      - name: Validate gold benchmark ledger
         run: python -m taarr.dataset validate data/benchmark/benchmark.jsonl
+      - name: Validate draft annotation queue
+        run: python -m taarr.dataset validate data/benchmark/draft_items.jsonl
       - name: Run tests
         run: pytest
       - name: Lint Python source and tests
