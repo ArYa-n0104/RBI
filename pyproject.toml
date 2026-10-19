@@ -30,6 +30,7 @@ taarr-dataset = "taarr.dataset:main"
 taarr-sources = "taarr.sources:main"
 taarr-extract = "taarr.extract:main"
 taarr-annotation = "taarr.annotation:main"
+taarr-evaluate = "taarr.evaluate_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
