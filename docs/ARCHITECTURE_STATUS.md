@@ -8,18 +8,19 @@
 - Clause/version API, exemption listing API, gold-only benchmark scoring endpoint, JSONL validation, dual-annotation agreement CLI, tests and CI.
 - `.env.example` contains provisional local-development policy settings; review them before gold annotation.
 
-## Added for reproducible data services
-- Docker Compose definitions for PostgreSQL with pgvector and Neo4j Community.
-- PostgreSQL schema for clause versions, FTS, optional vector embeddings, independent annotations, adjudications, audit events and evaluation runs.
-- Neo4j uniqueness constraints/indexes and recommended relationship vocabulary.
+## Portability decision
+- The default workflow has no external database dependency. The repository's JSONL catalog and benchmark are portable, version-controlled data files; the catalog is loaded into memory.
+- Docker Compose, PostgreSQL/pgvector and Neo4j scaffolding were removed to avoid requiring external services or machine-specific setup.
+- If persistence becomes necessary, prefer Python's built-in SQLite stored in a project-local data directory, with a way to disable it. SQLite persistence is a future enhancement, not currently implemented.
+- No installation of Docker, PostgreSQL, Neo4j, vector services or LLM API keys is required for the current app.
 
-## Not yet wired into live query resolution
-- PostgreSQL/pgvector and Neo4j are optional infrastructure at this point; the existing API reads the JSONL catalog and resolves in memory.
-- Dense embeddings are not generated and no vector retrieval is active.
-- The current retriever is lexical token overlap, not BM25.
-- No LLM extraction or explanation call is active; the deterministic engine itself produces reasons.
-- Resolution audit schema exists but live API audit writes are not enabled.
-- No authenticated multi-user workflow is implemented; local single-tenant research mode is the current scope.
-- Gold benchmark and quantitative comparisons are not complete.
+## Not yet implemented
+- Dense embeddings and semantic/vector retrieval.
+- BM25 or other dedicated ranking-based hybrid retrieval.
+- Graph traversal over amendment/exemption/dependency relations in a graph database.
+- LLM-assisted extraction or explanation calls; the deterministic engine currently produces reasons.
+- Live persistent resolution audit writes.
+- Multi-user authentication.
+- Gold benchmark construction and quantitative baseline/ablation results.
 
 Do not describe planned capabilities as implemented in a thesis, poster, or defence.
