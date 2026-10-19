@@ -199,6 +199,7 @@ If you have not cloned the repository, follow the setup steps above. Do not down
 - [Source acquisition and feasibility pilot](docs/SOURCE_REGISTER.md)
 - [Clause-level ingestion protocol](docs/INGESTION_PROTOCOL.md)
 - [Dataset roadmap and unresolved decisions](docs/DECISIONS.md)
+- [Independent annotation and Cohen's kappa protocol](docs/ANNOTATION_PROTOCOL.md)
 - [Obligation-version schema](schemas/obligation_version.schema.json)
 - [Benchmark item schema](schemas/benchmark_item.schema.json)
 - [Data validation CLI](src/taarr/dataset.py)
