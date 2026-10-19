@@ -78,6 +78,68 @@ python -m taarr.dataset validate data/benchmark/draft_items.jsonl
 pytest
 ```
 
+## Run the full application locally
+
+Open two VS Code terminals from the repository root.
+
+### Terminal 1 — API
+
+```bash
+python -m venv .venv
+```
+
+Activate the environment (Windows PowerShell: `.\\.venv\\Scripts\\Activate.ps1`; macOS/Linux: `source .venv/bin/activate`), then install and configure:
+
+```bash
+python -m pip install --upgrade pip
+pip install -e ".[dev,ingest]"
+```
+
+Copy `.env.example` to `.env`. Before using the resolution and benchmark endpoints, select the three policy values described in [Decision log](docs/DECISIONS.md). The code intentionally does not choose them for you. The accepted values are:
+
+- `TAARR_NO_VERSION_POLICY=DROP` or `NOT_APPLICABLE`
+- `TAARR_MISSING_FACTS_POLICY=STRICT_MISSING` or `KLEENE`
+- `TAARR_UNKNOWN_PRECEDENCE_POLICY=INDETERMINATE_FIRST` or `DEFINITIVE_RULES_FIRST`
+
+Then start the API:
+
+```bash
+uvicorn taarr.api:app --reload
+```
+
+API health and interactive endpoint documentation:
+- http://127.0.0.1:8000/api/v1/health
+- http://127.0.0.1:8000/docs
+
+### Terminal 2 — React frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open http://localhost:5173. Vite proxies `/api` and `/health` to the backend on port 8000. Use Node.js 22 for the frontend toolchain.
+
+The UI currently provides the reasoning console, entity-profile inputs, date selection, clause/version explorer, source provenance, and gold-only benchmark dashboard. The catalog includes bootstrap source records marked `source_located_clause_not_gold_verified`; that status is intentionally visible and is not equivalent to legal verification. The gold benchmark starts empty by design.
+
+### Run checks
+
+From the repository root:
+
+```bash
+pytest
+ruff check src tests
+python -m taarr.dataset validate data/benchmark/benchmark.jsonl
+python -m taarr.dataset validate data/benchmark/draft_items.jsonl
+```
+
+From `frontend/`:
+
+```bash
+npm run build
+```
+
 ## Acquire and extract the official regulatory sources
 
 Run the following from the repository root in the VS Code terminal. Downloads are restricted to HTTPS on official RBI/SEBI domains; raw source snapshots under `data/raw/` are local and ignored by Git.
