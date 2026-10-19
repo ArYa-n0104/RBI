@@ -4,6 +4,7 @@ import pytest
 
 from taarr.evaluate import audit, score
 
+
 def item(key, outcome, status="gold_verified", group="g", split=None):
     value={"benchmark_item_id":key,"gold_outcome":outcome,"annotation_status":status,"split_group_id":group}
     if split is not None: value["split"]=split
