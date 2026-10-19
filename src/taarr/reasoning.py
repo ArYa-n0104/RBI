@@ -185,6 +185,7 @@ def _evidence_for_version(version: ClauseVersion, selected: bool) -> dict[str, A
         "effective_from": version.effective_from.isoformat(),
         "effective_to": version.effective_to.isoformat() if version.effective_to else None,
         "selected": selected,
+        "verification_status": version.verification_status,
     }
 
 
