@@ -95,13 +95,13 @@ python -m pip install --upgrade pip
 pip install -e ".[dev,ingest]"
 ```
 
-Copy `.env.example` to `.env`. The example now contains **provisional local-development settings** so you can run the UI and exercise the resolver:
+Copy `.env.example` to `.env`. The example contains the adopted D-001 no-version policy plus explicit settings for the still-open ordering questions:
 
 - `TAARR_NO_VERSION_POLICY=NOT_APPLICABLE`
 - `TAARR_MISSING_FACTS_POLICY=KLEENE`
 - `TAARR_UNKNOWN_PRECEDENCE_POLICY=DEFINITIVE_RULES_FIRST`
 
-These are explicit testing settings, **not final research/legal decisions**. Review [Decision log](docs/DECISIONS.md), get the project owner/supervisor to approve the unresolved D-001 and D-003 semantics, and version that decision before creating gold benchmark labels. For an existing checkout, `git pull` does not overwrite your local `.env`; copy the three values above into it manually if needed.
+D-001 is finalized: `NOT_APPLICABLE` means TAARR emits a `Not applicable` result with temporal-filter evidence when no version is in force on the reference date. The missing-facts and unknown-precedence settings remain explicit choices, and D-003 is still open. Review [Decision log](docs/DECISIONS.md) before labeling affected edge cases or creating gold benchmark labels. For an existing checkout, `git pull` does not overwrite your local `.env`; verify that the three values above are present in it.
 
 Then start the API:
 
