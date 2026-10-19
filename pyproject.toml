@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "taarr"
+version = "0.1.0"
+description = "Temporal and Applicability-Aware Regulatory Reasoning for RBI and SEBI"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Research prototype; see project policy before redistribution" }
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0,<9.0",
+  "ruff>=0.6,<1.0",
+]
+
+[project.scripts]
+taarr-dataset = "taarr.dataset:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
