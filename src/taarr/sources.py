@@ -14,9 +14,10 @@ import json
 import re
 import sys
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.error import URLError
 from urllib.parse import urljoin, urlparse
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
@@ -177,7 +178,7 @@ def fetch_source(
             "source_id": source_id,
             "requested_url": source_url,
             "final_url": final_url,
-            "retrieved_at_utc": datetime.now(timezone.utc).isoformat(),
+            "retrieved_at_utc": datetime.now(UTC).isoformat(),
             "content_type": content_type,
             "size_bytes": size_bytes,
             "sha256": sha256,
@@ -240,7 +241,7 @@ def main(argv: list[str] | None = None) -> int:
                 timeout=args.timeout,
                 max_bytes=args.max_mb * 1024 * 1024,
             )
-        except Exception as exc:  # CLI should report per-source network/format failures.
+        except (OSError, ValueError, RuntimeError, URLError, TimeoutError) as exc:
             failed = True
             print(f"FAILED {source_id}: {exc}", file=sys.stderr)
         else:
