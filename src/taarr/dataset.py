@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from datetime import date
 from pathlib import Path
@@ -36,7 +37,8 @@ REQUIRED_FIELDS = {
 
 
 def _is_iso_date(value: Any) -> bool:
-    if not isinstance(value, str):
+    """Accept only canonical YYYY-MM-DD dates, not all alternate ISO representations."""
+    if not isinstance(value, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
         return False
     try:
         date.fromisoformat(value)
@@ -50,6 +52,10 @@ def _is_https_url(value: Any) -> bool:
         return False
     parsed = urlparse(value)
     return parsed.scheme == "https" and bool(parsed.netloc)
+
+
+def _valid_annotation(record: Any) -> bool:
+    return isinstance(record, dict) and record.get("outcome") in OUTCOMES
 
 
 def validate_item(item: Any, line_number: int = 1) -> list[str]:
@@ -83,6 +89,7 @@ def validate_item(item: Any, line_number: int = 1) -> list[str]:
         errors.append(f"{prefix}: gold_obligations must be a non-empty array")
         obligations = []
     obligation_ids: set[str] = set()
+    target_records: list[dict[str, Any]] = []
     for idx, obligation in enumerate(obligations):
         label = f"{prefix}: gold_obligations[{idx}]"
         if not isinstance(obligation, dict):
@@ -93,6 +100,8 @@ def validate_item(item: Any, line_number: int = 1) -> list[str]:
                 errors.append(f"{label}.{field} must be a non-empty string")
         if isinstance(obligation.get("obligation_id"), str):
             obligation_ids.add(obligation["obligation_id"])
+        if obligation.get("role") == "target":
+            target_records.append(obligation)
         if not _is_https_url(obligation.get("official_url")):
             errors.append(f"{label}.official_url must be an HTTPS URL")
         if not isinstance(obligation.get("clause_text"), str) or not obligation.get("clause_text", "").strip():
@@ -102,11 +111,24 @@ def validate_item(item: Any, line_number: int = 1) -> list[str]:
     target_id = item.get("target_obligation_id")
     if isinstance(target_id, str) and obligations and target_id not in obligation_ids:
         errors.append(f"{prefix}: target_obligation_id must appear in gold_obligations")
+    matching_targets = [
+        obligation
+        for obligation in target_records
+        if obligation.get("obligation_id") == target_id
+    ]
+    if obligations and not matching_targets:
+        errors.append(f"{prefix}: target_obligation_id must identify an obligation with role='target'")
+    if len(matching_targets) > 1:
+        errors.append(f"{prefix}: exactly one gold_obligations record may be the target")
 
     effective_dates = item.get("effective_dates")
     if not isinstance(effective_dates, list):
         errors.append(f"{prefix}: effective_dates must be an array")
         effective_dates = []
+    elif not effective_dates:
+        errors.append(f"{prefix}: effective_dates must contain the target version's date evidence")
+
+    effective_version_ids: set[str] = set()
     for idx, version in enumerate(effective_dates):
         label = f"{prefix}: effective_dates[{idx}]"
         if not isinstance(version, dict):
@@ -115,6 +137,11 @@ def validate_item(item: Any, line_number: int = 1) -> list[str]:
         for field in ("version_id", "publication_date", "effective_from", "effective_to", "amendment_lineage"):
             if field not in version:
                 errors.append(f"{label}.{field} is required (effective_to may be null)")
+        version_id = version.get("version_id")
+        if isinstance(version_id, str):
+            if version_id in effective_version_ids:
+                errors.append(f"{label}: duplicate version_id {version_id!r}")
+            effective_version_ids.add(version_id)
         for field in ("publication_date", "effective_from"):
             if field in version and not _is_iso_date(version[field]):
                 errors.append(f"{label}.{field} must be an ISO date")
@@ -126,6 +153,10 @@ def validate_item(item: Any, line_number: int = 1) -> list[str]:
             errors.append(f"{label}: effective_from must be earlier than effective_to")
         if not isinstance(version.get("amendment_lineage"), list):
             errors.append(f"{label}.amendment_lineage must be an array")
+
+    for target in matching_targets:
+        if target.get("version_id") not in effective_version_ids:
+            errors.append(f"{prefix}: target version_id must have an effective_dates record")
 
     relations = item.get("exemptions_dependencies")
     if not isinstance(relations, list):
@@ -154,8 +185,10 @@ def validate_item(item: Any, line_number: int = 1) -> list[str]:
         errors.append(f"{prefix}: gold_explanation must be non-empty")
     if item.get("annotation_status") not in ANNOTATION_STATUSES:
         errors.append(f"{prefix}: annotation_status must be one of {', '.join(sorted(ANNOTATION_STATUSES))}")
-    if not isinstance(item.get("annotations"), dict):
+    annotations = item.get("annotations")
+    if not isinstance(annotations, dict):
         errors.append(f"{prefix}: annotations must be an object")
+        annotations = {}
     if not isinstance(item.get("scenario_tags"), list) or not all(
         isinstance(tag, str) and tag.strip() for tag in item.get("scenario_tags", [])
     ):
@@ -163,16 +196,17 @@ def validate_item(item: Any, line_number: int = 1) -> list[str]:
     if not isinstance(item.get("split_group_id"), str) or not item.get("split_group_id", "").strip():
         errors.append(f"{prefix}: split_group_id must be a non-empty string")
 
-    if item.get("annotation_status") == "gold_verified":
-        annotations = item.get("annotations", {})
-        if isinstance(annotations, dict):
-            for annotator in ("annotator_1", "annotator_2"):
-                record = annotations.get(annotator)
-                if not isinstance(record, dict) or record.get("outcome") not in OUTCOMES:
-                    errors.append(f"{prefix}: gold_verified item requires {annotator}.outcome")
-            adjudication = annotations.get("adjudication")
-            if not isinstance(adjudication, dict) or adjudication.get("outcome") not in OUTCOMES:
-                errors.append(f"{prefix}: gold_verified item requires adjudication.outcome")
+    status = item.get("annotation_status")
+    if status in {"dual_annotated", "adjudicated", "gold_verified"}:
+        for annotator in ("annotator_1", "annotator_2"):
+            if not _valid_annotation(annotations.get(annotator)):
+                errors.append(f"{prefix}: {status} item requires {annotator}.outcome")
+    if status in {"adjudicated", "gold_verified"}:
+        adjudication = annotations.get("adjudication")
+        if not _valid_annotation(adjudication):
+            errors.append(f"{prefix}: {status} item requires adjudication.outcome")
+        elif status == "gold_verified" and item.get("gold_outcome") != adjudication.get("outcome"):
+            errors.append(f"{prefix}: gold_outcome must match adjudication.outcome for gold_verified items")
 
     return errors
 
@@ -200,8 +234,7 @@ def validate_file(path: str | Path) -> tuple[int, list[str]]:
                     errors.append(f"line {line_number}: invalid JSON: {exc.msg}")
                     continue
                 validated_count += 1
-                item_errors = validate_item(item, line_number)
-                errors.extend(item_errors)
+                errors.extend(validate_item(item, line_number))
                 if isinstance(item, dict):
                     item_id = item.get("benchmark_item_id")
                     if isinstance(item_id, str) and item_id:
