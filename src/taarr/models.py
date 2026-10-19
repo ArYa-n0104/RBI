@@ -101,6 +101,7 @@ class ClauseVersion:
     exemptions: tuple[ExceptionRule, ...] = ()
     dependencies: tuple[DependencyRule, ...] = ()
     precedence: int | None = None
+    verification_status: str = "unverified"
 
     def is_active(self, on_date: date) -> bool:
         return self.effective_from <= on_date and (
