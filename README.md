@@ -213,6 +213,15 @@ With `.env` policies configured, run `python -m taarr.experiments --benchmark da
 
 Run `python -m taarr.provenance_audit` to check official-source URL domains, duplicate IDs, temporal interval structure, gold clause/version references, adjudication metadata, and split leakage. An empty gold benchmark remains `needs_review`; a structural pass is not legal verification. See [Provenance audit](docs/PROVENANCE_AUDIT.md).
 
+### Run experiments and audit data readiness
+
+```bash
+python -m taarr.provenance_audit
+python -m taarr.experiments --benchmark data/benchmark/benchmark.jsonl --catalog data/obligations/obligations.jsonl --output reports/experiments/latest.json
+```
+
+The provenance audit checks source domains, catalog and benchmark IDs, gold references, adjudication metadata, and split leakage. The experiment runner compares the configured resolver with three documented ablations, records policy and run metadata, and writes predictions plus evidence to a local JSON report. Only `gold_verified` rows are scored. Reports are ignored by Git by default.
+
 ## Core docs
 
 - [Dataset schema and annotation guide](docs/DATASET_SPEC.md)
