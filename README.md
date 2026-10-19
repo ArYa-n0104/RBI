@@ -195,6 +195,24 @@ If you have not cloned the repository, follow the setup steps above. Do not down
 - Keep benchmark splits grouped by underlying obligation/instrument lineage to reduce leakage.
 - Release only data permitted for redistribution; link to official source documents rather than assuming document contents can always be republished.
 
+## Research infrastructure (optional local services)
+
+The app's default development path remains JSONL + in-memory resolution. To bring up the planned dual-store infrastructure for the next integration increment, install Docker Desktop and run from the repository root:
+
+```bash
+docker compose up -d
+docker compose ps
+```
+
+- PostgreSQL + pgvector: localhost:5432 (database `taarr`, user `taarr`; default password is for local development only).
+- Neo4j Browser: http://localhost:7474 (default local-development credentials are documented in `docker-compose.yml`).
+
+The PostgreSQL initialization script creates relational clause/version, full-text search, optional embedding, annotation, adjudication, audit and evaluation tables. It does not automatically import the JSONL catalog or create embeddings. Neo4j constraints are provided in `db/neo4j/001_constraints.cypher`; execute them in Neo4j Browser or with `cypher-shell` after the database starts. The current query endpoint is **not yet wired** to these stores; see [Architecture implementation status](docs/ARCHITECTURE_STATUS.md). Do not claim pgvector semantic retrieval or graph expansion is live until the adapters and integration tests are implemented.
+
+## Research novelty and evaluation
+
+Read [Research evaluation protocol](docs/RESEARCH_EVALUATION.md) for the proposed dataset contribution, baselines, ablations and metrics, and [Provenance and audit invariants](docs/PROVENANCE_AND_AUDIT.md) for the third differentiating capability. The current gold benchmark is intentionally empty: accuracy and novelty superiority are not yet measured. Never promote draft labels to gold without two independent annotations, adjudication and source/version verification.
+
 ## Core docs
 
 - [Dataset schema and annotation guide](docs/DATASET_SPEC.md)
@@ -202,6 +220,9 @@ If you have not cloned the repository, follow the setup steps above. Do not down
 - [Clause-level ingestion protocol](docs/INGESTION_PROTOCOL.md)
 - [Dataset roadmap and unresolved decisions](docs/DECISIONS.md)
 - [Independent annotation and Cohen's kappa protocol](docs/ANNOTATION_PROTOCOL.md)
+- [Research evaluation protocol](docs/RESEARCH_EVALUATION.md)
+- [Architecture implementation status](docs/ARCHITECTURE_STATUS.md)
+- [Clause-level provenance and audit invariants](docs/PROVENANCE_AND_AUDIT.md)
 - [Obligation-version schema](schemas/obligation_version.schema.json)
 - [Benchmark item schema](schemas/benchmark_item.schema.json)
 - [Data validation CLI](src/taarr/dataset.py)
