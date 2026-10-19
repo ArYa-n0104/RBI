@@ -1,16 +1,24 @@
 # TAARR Dataset Specification
 
-This specification implements the dataset requirements in the *TAARR Build Plan* (Novelty 1, pp. 2–3) and *TAARR Review Paper* (Table III and benchmark construction, pp. 12–13). It intentionally does not contain fabricated regulatory labels.
+This specification implements the dataset requirements in the *TAARR Build Plan* (Novelty 1, pp. 2–3) and *TAARR Review Paper* (Table III and benchmark construction, pp. 12–13). It intentionally separates provisional annotation candidates from verified gold data.
 
 ## Research unit
 
-**One benchmark item is one target-obligation decision** for a natural-language question, a reference date, and one entity profile. This keeps the primary gold outcome unambiguous for accuracy, macro-F1, abstention, and ablation metrics. An item's `gold_obligations` lists the relevant target and supporting/source obligations; `target_obligation_id` identifies which obligation the single `gold_outcome` labels.
+**One benchmark item is one target-obligation decision** for a natural-language question, a reference date, and one entity profile. This keeps the primary outcome unambiguous for accuracy, macro-F1, abstention, and ablation metrics. An item's `gold_obligations` lists the relevant target and supporting/source obligations; `target_obligation_id` identifies which obligation the single outcome labels.
 
 The live application may return multiple obligation decisions for one user query. For benchmark scoring, create one item per target obligation and preserve the same query/date/profile where necessary. When grouping examples for train/dev/test or evaluation, keep items tied to the same obligation/version/amendment lineage in the same split to reduce leakage.
 
+## Files and label status
+
+- `data/obligations/obligations.jsonl`: clause-level obligation/version inventory with source URLs, effective-date metadata, conditions and amendment lineage.
+- `data/benchmark/draft_items.jsonl`: provisional candidate items waiting for two independent annotations and adjudication.
+- `data/benchmark/benchmark.jsonl`: the gold benchmark. Only adjudicated, source-verified items may be promoted here.
+
+The `gold_outcome` field in a draft item is a **candidate hypothesis only**, not verified ground truth. Its `annotation_status` must remain `draft` until the independent annotation workflow has been completed. Never report draft items in benchmark metrics or describe them as confirmed gold.
+
 ## Required item fields
 
-Each non-empty line of `data/benchmark/benchmark.jsonl` is one JSON object:
+Each non-empty line of a benchmark JSONL file is one JSON object:
 
 | Field | Meaning |
 |---|---|
@@ -20,11 +28,11 @@ Each non-empty line of `data/benchmark/benchmark.jsonl` is one JSON object:
 | `entity_profile` | Known entity type and relevant attributes. Include only known facts; do not silently infer omitted attributes. |
 | `missing_facts_intentionally_omitted` | Attribute names deliberately withheld for abstention tests. Empty array when none. |
 | `target_obligation_id` | Stable ID of the obligation whose outcome is labelled in this item. |
-| `gold_obligations` | Relevant clause/obligation records with instrument/version IDs, clause identifiers, official URLs, and the source text or a short faithful extract for annotation. |
+| `gold_obligations` | Relevant clause/obligation records with instrument/version IDs, clause identifiers, official URLs and a short extract/summary for annotation. |
 | `effective_dates` | Date and version evidence; publication and effective dates must remain distinct. The validity interval is start-inclusive and end-exclusive. |
 | `exemptions_dependencies` | Relevant exemption, exclusion, dependency and cross-reference records, including their priority only where a source establishes one. |
-| `gold_outcome` | Exactly one of `Applicable`, `Not applicable`, `Indeterminate`, `Conflict`. |
-| `gold_explanation` | Concise explanation grounded in the official evidence and identifying why the gold outcome follows. |
+| `gold_outcome` | Exactly one of `Applicable`, `Not applicable`, `Indeterminate`, `Conflict`. In draft files it is a hypothesis, not gold truth. |
+| `gold_explanation` | Explanation grounded in official evidence, with the candidate rationale kept separate from verified annotation notes. |
 | `annotation_status` | `draft`, `dual_annotated`, `adjudicated`, or `gold_verified`. |
 | `annotations` | Independent annotator outcomes/notes and adjudication metadata; see annotation protocol below. |
 | `scenario_tags` | Tags used to stratify evaluation, e.g. `pre_amendment`, `post_amendment`, `missing_fact`, `exemption`. |
@@ -36,7 +44,7 @@ Each `gold_obligations` element should include:
 - `obligation_id`: stable identity across amendment events where the normative obligation continues;
 - `version_id`: a specific text/version, not the stable obligation ID;
 - `instrument_id`, `clause_id`, `official_url`;
-- `clause_text`: exact relevant text or a clearly identified faithful extract; preserve subsection numbering;
+- `clause_text`: a short extract anchored to the official source, and `clause_summary` where helpful; store full source text in the controlled extraction/source store as permitted;
 - `source_publication_date`, `effective_from`, `effective_to` (nullable);
 - `amendment_lineage`: ordered event references or IDs linking the source wording to earlier/later versions;
 - `role`: `target`, `supporting`, `exemption`, `dependency`, or `definition`.
@@ -65,7 +73,7 @@ These semantics must be applied consistently and recorded in adjudication notes.
 3. Prepare items that cover amendment-sensitive dates, distinct entity categories, active exemptions, dependencies, deliberately missing facts, and genuine conflicts where supported by official sources.
 4. Have two annotators label items independently, without seeing each other's outcome.
 5. Adjudicate disagreement against the official text and amendment lineage; record the rationale.
-6. Mark `gold_verified` only after source URLs, clause IDs, effective dates, related provisions, gold outcome and explanation have been checked.
+6. Mark `gold_verified` only after source URLs, clause IDs, effective dates, related provisions, outcome and explanation have been checked.
 7. Measure agreement using Cohen's kappa on the independent labels before adjudication. Also report counts per outcome and per scenario tag.
 8. Do not invent Conflict examples merely to balance classes. Include them only when sources genuinely cannot be reconciled automatically.
 9. Report annotation limitations and the effect of manual curation, as required by the review's threats-to-validity section.
@@ -78,7 +86,8 @@ Run:
 
 ```bash
 python -m taarr.dataset validate data/benchmark/benchmark.jsonl
+python -m taarr.dataset validate data/benchmark/draft_items.jsonl
 pytest
 ```
 
-The validator checks file structure and core invariants; it cannot certify legal correctness. Human source verification remains mandatory. Keep raw official PDFs/text extracts, normalized clause records, and benchmark item labels logically separate, and release only material permitted for redistribution.
+The validator checks structure and core invariants; it cannot certify legal correctness. Human source verification remains mandatory. Keep raw official source documents, extracted clauses, normalized obligation records, and benchmark labels logically separate. Release only material permitted for redistribution.
