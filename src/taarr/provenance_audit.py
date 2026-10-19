@@ -11,7 +11,6 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
 
 from .dataset import OUTCOMES
 from .evaluate import read_jsonl
@@ -135,7 +134,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         result = audit_records(read_jsonl(args.catalog), read_jsonl(args.benchmark))
-        payload = json.dumps(result, indent=2) + "\\n"
+        payload = json.dumps(result, indent=2) + "\n"
         if args.output:
             destination = Path(args.output)
             destination.parent.mkdir(parents=True, exist_ok=True)
