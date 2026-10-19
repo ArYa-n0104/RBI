@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from datetime import date
-
 import pytest
+from datetime import date
 
 from taarr.models import (
     ClauseVersion,
