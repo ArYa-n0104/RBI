@@ -205,6 +205,10 @@ Do not install PostgreSQL, Neo4j, Docker, or configure API keys for the current 
 
 Read [Research evaluation protocol](docs/RESEARCH_EVALUATION.md) for the proposed dataset contribution, baselines, ablations and metrics, and [Provenance and audit invariants](docs/PROVENANCE_AND_AUDIT.md) for the third differentiating capability. The current gold benchmark is intentionally empty: accuracy and novelty superiority are not yet measured. Never promote draft labels to gold without two independent annotations, adjudication and source/version verification.
 
+### Run baseline and ablation experiments
+
+With `.env` policies configured, run `python -m taarr.experiments --benchmark data/benchmark/benchmark.jsonl --catalog data/obligations/obligations.jsonl --output reports/experiments/latest.json`. See [Experiment Runner](docs/EXPERIMENT_RUNNER.md). Only `gold_verified` rows are scored; with the current empty gold benchmark, metrics correctly remain unavailable.
+
 ## Core docs
 
 - [Dataset schema and annotation guide](docs/DATASET_SPEC.md)
