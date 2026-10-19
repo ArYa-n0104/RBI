@@ -195,19 +195,11 @@ If you have not cloned the repository, follow the setup steps above. Do not down
 - Keep benchmark splits grouped by underlying obligation/instrument lineage to reduce leakage.
 - Release only data permitted for redistribution; link to official source documents rather than assuming document contents can always be republished.
 
-## Research infrastructure (optional local services)
+## Portable architecture
 
-The app's default development path remains JSONL + in-memory resolution. To bring up the planned dual-store infrastructure for the next integration increment, install Docker Desktop and run from the repository root:
+The default project deliberately avoids Docker and external database services. The obligation catalog and benchmark are version-controlled JSONL files; the API loads the catalog into memory. This makes the project straightforward to clone and run on another machine with Python 3.11+, Git, and Node.js 22 for the frontend.
 
-```bash
-docker compose up -d
-docker compose ps
-```
-
-- PostgreSQL + pgvector: localhost:5432 (database `taarr`, user `taarr`; default password is for local development only).
-- Neo4j Browser: http://localhost:7474 (default local-development credentials are documented in `docker-compose.yml`).
-
-The PostgreSQL initialization script creates relational clause/version, full-text search, optional embedding, annotation, adjudication, audit and evaluation tables. It does not automatically import the JSONL catalog or create embeddings. Neo4j constraints are provided in `db/neo4j/001_constraints.cypher`; execute them in Neo4j Browser or with `cypher-shell` after the database starts. The current query endpoint is **not yet wired** to these stores; see [Architecture implementation status](docs/ARCHITECTURE_STATUS.md). Do not claim pgvector semantic retrieval or graph expansion is live until the adapters and integration tests are implemented.
+Do not install PostgreSQL, Neo4j, Docker, or configure API keys for the current workflow. If persistent local audit/history is later required, prefer Python's built-in SQLite database stored under a project-local data/local directory, with a documented option to disable it. Keep this optional and never commit private user data or generated local database files. Dense vector retrieval and graph traversal are not currently active features.
 
 ## Research novelty and evaluation
 
