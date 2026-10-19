@@ -83,3 +83,9 @@ def test_duplicate_version_and_item_ids_are_blocking():
     codes = {issue["code"] for issue in result["issues"]}
     assert "DUPLICATE_VERSION" in codes
     assert "DUPLICATE_ITEM_ID" in codes
+
+
+def test_gold_item_cannot_reference_unverified_catalog_version():
+    result = audit_records([catalog_record()], [gold_item()])
+    assert any(issue["code"] == "GOLD_VERSION_NOT_VERIFIED" for issue in result["issues"])
+    assert result["status"] == "blocked"
