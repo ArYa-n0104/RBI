@@ -24,6 +24,14 @@ jobs:
         run: python -m taarr.dataset validate data/benchmark/benchmark.jsonl
       - name: Validate draft annotation queue
         run: python -m taarr.dataset validate data/benchmark/draft_items.jsonl
+      - name: Audit source provenance and benchmark readiness
+        run: python -m taarr.provenance_audit
+      - name: Smoke-test experiment runner on empty gold benchmark
+        env:
+          TAARR_NO_VERSION_POLICY: NOT_APPLICABLE
+          TAARR_MISSING_FACTS_POLICY: KLEENE
+          TAARR_UNKNOWN_PRECEDENCE_POLICY: DEFINITIVE_RULES_FIRST
+        run: python -m taarr.experiments --output /tmp/taarr-experiments-ci.json
       - name: Run tests
         run: pytest
       - name: Lint Python source and tests
