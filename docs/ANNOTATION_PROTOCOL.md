@@ -12,7 +12,7 @@ Each benchmark row labels one target-obligation decision for a query, reference 
 - any relevant exclusions, exemptions, dependencies and precedence language;
 - a concise rationale tied to the source evidence.
 
-Use only the four labels: `Applicable`, `Not applicable`, `Indeterminate`, and `Conflict`. Missing facts are not false facts. Do not infer a priority absent source support. Do not resolve the open policy choices in `docs/DECISIONS.md` by personal preference.
+Use only the four labels: `Applicable`, `Not applicable`, `Indeterminate`, and `Conflict`. Missing facts are not false facts. Do not infer a priority absent source support. For D-001, follow the adopted policy: if the target obligation has no version in force on the reference date, label the decision `Not applicable` and record the temporal reason and official version-timeline evidence. Verify the source/version timeline before gold verification. D-003 remains open; do not label affected overlap cases until its ordering policy is approved.
 
 ## Independent annotation and adjudication
 
@@ -43,7 +43,7 @@ Report the number of paired items alongside kappa. Because four outcomes may be 
 - [ ] Disagreement, if any, has an adjudication record.
 - [ ] The target obligation and exact clause version are source-grounded.
 - [ ] Publication date and effective date are separately evidenced.
-- [ ] No open D-001/D-003 ambiguity affects the gold outcome, or the project owner has approved and versioned the applicable policy.
+- [ ] The adopted D-001 policy is applied consistently; no unresolved D-003 ambiguity affects the gold outcome, or the project owner has approved and versioned the applicable policy.
 - [ ] Related versions and scenarios share a split-group key to prevent train/test leakage.
 - [ ] `python -m taarr.dataset validate data/benchmark/benchmark.jsonl` passes.
 - [ ] `python -m taarr.annotation data/benchmark/draft_items.jsonl` has been reviewed and its paired sample size is disclosed.
