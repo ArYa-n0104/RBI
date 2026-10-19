@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 
+import pytest
 from fastapi.testclient import TestClient
 
 from taarr.api import create_app
