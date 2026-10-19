@@ -49,7 +49,8 @@ cd RBI
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-pip install -e ".[dev]"
+pip install -e ".[dev,ingest]"
+python -m taarr.sources list
 python -m taarr.dataset validate data/benchmark/benchmark.jsonl
 python -m taarr.dataset validate data/benchmark/draft_items.jsonl
 pytest
@@ -70,11 +71,31 @@ cd RBI
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -e ".[dev]"
+pip install -e ".[dev,ingest]"
+python -m taarr.sources list
 python -m taarr.dataset validate data/benchmark/benchmark.jsonl
 python -m taarr.dataset validate data/benchmark/draft_items.jsonl
 pytest
 ```
+
+## Acquire and extract the official regulatory sources
+
+Run the following from the repository root in the VS Code terminal. Downloads are restricted to HTTPS on official RBI/SEBI domains; raw source snapshots under `data/raw/` are local and ignored by Git.
+
+```bash
+python -m taarr.sources list
+python -m taarr.sources fetch RBI-KYC-CONSOLIDATED RBI-KYC-AMEND-2025-06-12
+```
+
+The fetch command prints the exact local file path and SHA-256 hash. Copy that path into the extraction command; for example:
+
+```bash
+python -m taarr.extract "data/raw/RBI-KYC-AMEND-2025-06-12/PASTE_HASH_FILENAME_FROM_FETCH.html" --output data/extracted/RBI-KYC-AMEND-2025-06-12.txt
+```
+
+PDF extraction uses PyMuPDF, installed by `pip install -e ".[dev,ingest]"`. This step extracts text for review only. It does not create gold labels or automatically establish amendment lineage. Inspect extracted clause text against the official page/PDF before editing `data/obligations/obligations.jsonl` or drafting benchmark cases.
+
+The acquisition manifest records URL, retrieval time, path, content type, size and SHA-256. Do not commit raw source documents unless redistribution is permitted. Review the acquisition manifest before sharing it; it can contain local paths.
 
 ## Pull the latest changes into VS Code
 
@@ -89,7 +110,7 @@ If you have local edits, commit or stash them before pulling. To get the latest 
 
 ```bash
 git pull --ff-only origin main
-pip install -e ".[dev]"
+pip install -e ".[dev,ingest]"
 python -m taarr.dataset validate data/benchmark/benchmark.jsonl
 python -m taarr.dataset validate data/benchmark/draft_items.jsonl
 pytest
