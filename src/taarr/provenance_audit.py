@@ -32,7 +32,6 @@ def audit_records(catalog: list[dict[str, Any]], benchmark: list[dict[str, Any]]
     for index, record in enumerate(catalog, 1):
         loc = f"catalog:{index}"
         version_id = record.get("version_id")
-        obligation_id = record.get("obligation_id")
         clause_id = record.get("clause_id")
         if isinstance(version_id, str):
             if version_id in versions:
