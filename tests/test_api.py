@@ -126,7 +126,15 @@ def test_benchmark_does_not_score_draft_queue(client):
     assert payload["items"] == []
 
 
-def test_query_fails_closed_if_policy_is_unconfigured():
+def test_query_fails_closed_if_policy_is_unconfigured(monkeypatch):
+    # The developer's local .env may configure the resolver; this test must
+    # explicitly simulate a deployment where policy values are absent.
+    for key in (
+        "TAARR_NO_VERSION_POLICY",
+        "TAARR_MISSING_FACTS_POLICY",
+        "TAARR_UNKNOWN_PRECEDENCE_POLICY",
+    ):
+        monkeypatch.delenv(key, raising=False)
     client = TestClient(
         create_app(catalog=load_catalog("data/obligations/obligations.jsonl"), resolver_policy=None)
     )
