@@ -8,9 +8,12 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import platform
+import subprocess
 import sys
+import time
 from dataclasses import replace
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -136,7 +139,16 @@ def run_experiments(benchmark_path: str, catalog_path: str, policy: ResolverPoli
         "ablation_no_abstention": ("no_abstention", "Imputes absent applicability facts to force predicates false; diagnostic only."),
         "ablation_no_exemptions_dependencies": ("no_exceptions_dependencies", "Removes exemption and dependency rules before resolution."),
     }
+    try:
+        commit_sha = subprocess.run(["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        commit_sha = os.getenv("GITHUB_SHA")
     output: dict[str, Any] = {
+        "run_metadata": {
+            "started_at_utc": datetime.now(UTC).isoformat(),
+            "git_commit": commit_sha,
+            "python_version": platform.python_version(),
+        },
         "benchmark_path": benchmark_path,
         "catalog_path": catalog_path,
         "policy": {
@@ -152,7 +164,9 @@ def run_experiments(benchmark_path: str, catalog_path: str, policy: ResolverPoli
     }
     for name, (mode, description) in modes.items():
         variant = _catalog_variant(catalog, mode)
+        started = time.perf_counter()
         predictions = [_resolve_item(item, variant, policy, mode) for item in gold_items]
+        elapsed_seconds = time.perf_counter() - started
         metric_predictions = [
             {"benchmark_item_id": pred["benchmark_item_id"], "outcome": pred["outcome"]}
             for pred in predictions if pred["outcome"] is not None
@@ -160,6 +174,8 @@ def run_experiments(benchmark_path: str, catalog_path: str, policy: ResolverPoli
         metrics = score(gold_items, metric_predictions)
         output["experiments"][name] = {
             "description": description,
+            "elapsed_seconds": round(elapsed_seconds, 6),
+            "latency_ms_per_item": round(elapsed_seconds * 1000 / len(gold_items), 6) if gold_items else None,
             "metrics": metrics,
             "predictions": predictions,
         }
