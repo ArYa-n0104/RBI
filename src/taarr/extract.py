@@ -9,19 +9,24 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+from collections.abc import Set
 from html.parser import HTMLParser
 from pathlib import Path
-from typing import Iterable
+from typing import ClassVar
 
 
 class _StructuredHTMLText(HTMLParser):
     """Simple structure-aware HTML text extractor without retaining page chrome."""
 
-    _skip_tags = {"script", "style", "noscript", "svg", "nav", "header", "footer"}
-    _block_tags = {
-        "article", "section", "h1", "h2", "h3", "h4", "h5", "p",
-        "li", "tr", "td", "th", "br", "main",
-    }
+    _skip_tags: ClassVar[Set[str]] = frozenset(
+        {"script", "style", "noscript", "svg", "nav", "header", "footer"}
+    )
+    _block_tags: ClassVar[Set[str]] = frozenset(
+        {
+            "article", "section", "h1", "h2", "h3", "h4", "h5", "p",
+            "li", "tr", "td", "th", "br", "main",
+        }
+    )
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
