@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from datetime import date
-
 from taarr.experiments import run_experiments
 from taarr.models import (
     MissingFactsPolicy,
