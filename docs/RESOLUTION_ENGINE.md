@@ -44,18 +44,18 @@ Compound conditions:
 
 Supported compound nodes: `all_of`, `any_of`, and `not`. Kleene AND uses FALSE if any child is FALSE; otherwise UNKNOWN if any child is UNKNOWN; otherwise TRUE. Kleene OR uses TRUE if any child is TRUE; otherwise UNKNOWN if any child is UNKNOWN; otherwise FALSE.
 
-## Explicit policy choices — not yet frozen
+## Explicit policy choices and adopted decision
 
-The Build Plan and Review Paper differ on the following points. The engine makes these explicit constructor arguments so test runs cannot silently make the decision:
+The Build Plan and Review Paper differ on the following points. The engine keeps these as explicit constructor arguments so experiment runs can record their exact settings. The project owner has finalized D-001 as `NoVersionPolicy.NOT_APPLICABLE` (Review Paper Algorithm 1): if no version is in force, emit `Not applicable` with temporal-filter evidence and a reason stating that no recorded version is in force on the reference date. `DROP` remains available only for explicit comparison/ablation, not as the adopted project policy.
 
-- `NoVersionPolicy.DROP`: return no outcome if no version is in force (Build Plan).
-- `NoVersionPolicy.NOT_APPLICABLE`: emit Not applicable if no version is in force (Review Paper Algorithm 1).
+- `NoVersionPolicy.DROP`: return no outcome if no version is in force (Build Plan; not the adopted policy).
+- `NoVersionPolicy.NOT_APPLICABLE`: emit Not applicable if no version is in force (adopted policy).
 - `MissingFactsPolicy.STRICT_MISSING`: any missing applicability attribute results in Indeterminate before evaluating other conditions (Build Plan).
 - `MissingFactsPolicy.KLEENE`: evaluate the full Boolean condition with Kleene three-valued logic (Review Paper).
 - `UnknownPrecedencePolicy.INDETERMINATE_FIRST`: once applicability is UNKNOWN, abstain before checking exceptions/dependencies.
 - `UnknownPrecedencePolicy.DEFINITIVE_RULES_FIRST`: allow a definitive, verified exemption or conflict to settle the result before returning Indeterminate for unresolved facts.
 
-No shared default policy is set in the library. A benchmark run must serialize and report the policy selection. See GitHub issue [#1](https://github.com/ArYa-n0104/RBI/issues/1) before assigning final gold labels to edge cases.
+The library requires an explicit `ResolverPolicy`; it does not silently supply constructor defaults. Runtime configuration and benchmark runs must use and record the adopted `NOT_APPLICABLE` no-version policy. The missing-facts and unknown-precedence choices remain separate policy questions; D-003 is still open. See [Decision log](DECISIONS.md).
 
 ## Minimal use
 
@@ -92,7 +92,7 @@ record = Obligation(
     ),
 )
 configuration = ResolverPolicy(
-    no_version=NoVersionPolicy.DROP,
+    no_version=NoVersionPolicy.NOT_APPLICABLE,
     missing_facts=MissingFactsPolicy.KLEENE,
     unknown_precedence=UnknownPrecedencePolicy.DEFINITIVE_RULES_FIRST,
 )
@@ -106,7 +106,7 @@ result = resolve_obligation(
 print(result.to_dict() if result is not None else None)
 ```
 
-The values above show how to use the API, not a frozen TAARR global policy. Replace the choices only after the ambiguity is resolved and reflected in the benchmark annotation guide.
+The example uses the adopted D-001 policy. The other policy values are shown explicitly for reproducibility; do not treat D-003 as settled merely because an example configures one of its options.
 
 ## Verification
 
