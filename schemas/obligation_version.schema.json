@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TAARR Obligation Version Record",
+  "type": "object",
+  "required": [
+    "obligation_id",
+    "version_id",
+    "instrument_id",
+    "regulator",
+    "clause_id",
+    "source_url",
+    "source_publication_date",
+    "effective_from",
+    "effective_to",
+    "amendment_lineage",
+    "clause_text",
+    "clause_summary",
+    "modality",
+    "action",
+    "subject_scope",
+    "conditions",
+    "verification_status"
+  ],
+  "properties": {
+    "obligation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "instrument_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "regulator": {
+      "enum": [
+        "RBI",
+        "SEBI"
+      ]
+    },
+    "instrument_title": {
+      "type": "string"
+    },
+    "clause_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_url": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://"
+    },
+    "consolidated_source_url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri"
+    },
+    "source_publication_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "effective_from": {
+      "type": "string",
+      "format": "date"
+    },
+    "effective_to": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "amendment_lineage": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "clause_text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "clause_summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "modality": {
+      "enum": [
+        "must",
+        "must_not",
+        "may",
+        "mixed",
+        "unknown"
+      ]
+    },
+    "action": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stated_implementation_deadline": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "subject_scope": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "conditions": {
+      "type": "object"
+    },
+    "exemptions": {
+      "type": "array"
+    },
+    "dependencies": {
+      "type": "array"
+    },
+    "verification_status": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
