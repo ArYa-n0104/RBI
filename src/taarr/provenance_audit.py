@@ -26,6 +26,9 @@ def audit_records(catalog: list[dict[str, Any]], benchmark: list[dict[str, Any]]
     versions: dict[str, dict[str, Any]] = {}
     clauses: set[str] = set()
     obligations: set[str] = set()
+    for record in catalog:
+        if isinstance(record.get("obligation_id"), str):
+            obligations.add(record["obligation_id"])
     for index, record in enumerate(catalog, 1):
         loc = f"catalog:{index}"
         version_id = record.get("version_id")
@@ -35,8 +38,6 @@ def audit_records(catalog: list[dict[str, Any]], benchmark: list[dict[str, Any]]
             if version_id in versions:
                 issues.append(_issue("DUPLICATE_VERSION", "error", loc, f"Duplicate version_id {version_id}."))
             versions[version_id] = record
-        if isinstance(obligation_id, str):
-            obligations.add(obligation_id)
         if isinstance(clause_id, str):
             clauses.add(clause_id)
         source = record.get("source_url")
@@ -99,8 +100,12 @@ def audit_records(catalog: list[dict[str, Any]], benchmark: list[dict[str, Any]]
                     issues.append(_issue("GOLD_SOURCE_INVALID", "error", rloc, "Gold source must use an official RBI/SEBI HTTPS URL."))
                 if ref.get("version_id") not in versions:
                     issues.append(_issue("GOLD_VERSION_UNRESOLVED", "error", rloc, f"version_id {ref.get('version_id')!r} is absent from catalog."))
-                elif ref.get("clause_id") != versions[ref["version_id"]].get("clause_id"):
-                    issues.append(_issue("GOLD_CLAUSE_MISMATCH", "error", rloc, "Gold clause_id does not match the catalog version."))
+                else:
+                    catalog_version = versions[ref["version_id"]]
+                    if catalog_version.get("verification_status") != "gold_verified":
+                        issues.append(_issue("GOLD_VERSION_NOT_VERIFIED", "error", rloc, "Gold item references a catalog version that is not independently source-verified."))
+                    if ref.get("clause_id") != catalog_version.get("clause_id"):
+                        issues.append(_issue("GOLD_CLAUSE_MISMATCH", "error", rloc, "Gold clause_id does not match the catalog version."))
     leakage = sorted(group for group, splits in groups.items() if len(splits) > 1)
     for group in leakage:
         issues.append(_issue("SPLIT_GROUP_LEAKAGE", "error", group, "Related items appear in more than one split."))
