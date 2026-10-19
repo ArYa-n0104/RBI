@@ -32,7 +32,7 @@ def load_items(path: str | Path) -> list[dict[str, Any]]:
             except json.JSONDecodeError as exc:
                 raise ValueError(f"{source}:{line_number}: invalid JSON: {exc.msg}") from exc
             if not isinstance(item, dict):
-                raise ValueError(f"{source}:{line_number}: expected a JSON object")
+                raise TypeError(f"{source}:{line_number}: expected a JSON object")
             items.append(item)
     return items
 
