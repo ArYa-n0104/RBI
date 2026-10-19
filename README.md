@@ -13,8 +13,6 @@ This repository follows the supplied *TAARR Build Plan* and *TAARR Review Paper*
 - **Auditability:** every outcome should expose its evidence chain, clause IDs, official source URL, effective dates, and applicable exemption/dependency links.
 - **Evaluation:** compare with standard dense RAG, hybrid GraphRAG, temporal KG-RAG, and deterministic exception baselines; report ablations and evaluation metrics.
 
-See `docs/DATASET_SPEC.md` for the initial data contract and annotation protocol.
-
 ## Outcomes
 
 - `Applicable`
@@ -35,7 +33,9 @@ These labels are not interchangeable. In particular, a missing fact is not evide
 
 ## Repository status
 
-The current increment establishes dataset structure, annotation rules, a source register, and validation utilities. **No sample regulatory outcome is asserted as legally verified merely because it appears in a template.** The source register and benchmark must be populated from official RBI/SEBI materials and adjudicated before research evaluation.
+The first data-foundation increment is in place: a machine-readable obligation-version record, dataset schema, source register, ingestion protocol, JSONL validator, unit tests, and GitHub Actions CI.
+
+The official RBI KYC source pages have been located for a first pilot around paragraph 38(e). Three candidate examples for positive applicability, negative applicability and missing-fact abstention are staged in `data/benchmark/draft_items.jsonl`. They contain **provisional hypotheses, not verified gold labels**. The evaluation ledger `data/benchmark/benchmark.jsonl` intentionally remains empty until two independent annotations, adjudication and source/version verification have been completed. There is no invented Conflict item.
 
 ## Local setup
 
@@ -51,6 +51,7 @@ py -3.11 -m venv .venv
 python -m pip install --upgrade pip
 pip install -e ".[dev]"
 python -m taarr.dataset validate data/benchmark/benchmark.jsonl
+python -m taarr.dataset validate data/benchmark/draft_items.jsonl
 pytest
 ```
 
@@ -71,6 +72,7 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -e ".[dev]"
 python -m taarr.dataset validate data/benchmark/benchmark.jsonl
+python -m taarr.dataset validate data/benchmark/draft_items.jsonl
 pytest
 ```
 
@@ -83,11 +85,13 @@ git status
 git pull --ff-only origin main
 ```
 
-If you have local edits, commit or stash them before pulling. To get the latest work and install any changed Python dependencies:
+If you have local edits, commit or stash them before pulling. To get the latest work and verify it:
 
 ```bash
 git pull --ff-only origin main
 pip install -e ".[dev]"
+python -m taarr.dataset validate data/benchmark/benchmark.jsonl
+python -m taarr.dataset validate data/benchmark/draft_items.jsonl
 pytest
 ```
 
@@ -99,7 +103,9 @@ If you have not cloned the repository, follow the setup steps above. Do not down
 - Represent version intervals as **start-inclusive and end-exclusive**: `effective_from <= reference_date < effective_to`. A null `effective_to` means no recorded end date, not proof the clause remains current.
 - Keep each obligation's stable ID distinct from its version ID.
 - Do not invent regulatory clauses, effective dates, exemptions, dependencies, or Conflict examples.
-- Separate source extraction from gold annotation.
+- `draft_items.jsonl` is an annotation queue. A draft `gold_outcome` is a candidate hypothesis only and must not be reported as verified ground truth or used for final benchmark metrics.
+- Move an item into `benchmark.jsonl` only after two independent annotations, adjudication, and official source/version verification.
+- Keep raw source documents, extracted clauses, normalized obligation records and benchmark labels logically separate.
 - Two annotators should label benchmark items independently; adjudicate disagreements against official text and report Cohen's kappa as specified in the review.
 - Keep benchmark splits grouped by underlying obligation/instrument lineage to reduce leakage.
 - Release only data permitted for redistribution; link to official source documents rather than assuming document contents can always be republished.
@@ -108,14 +114,17 @@ If you have not cloned the repository, follow the setup steps above. Do not down
 
 - [Dataset schema and annotation guide](docs/DATASET_SPEC.md)
 - [Source acquisition and feasibility pilot](docs/SOURCE_REGISTER.md)
-- [Dataset roadmap and decisions](docs/DECISIONS.md)
+- [Clause-level ingestion protocol](docs/INGESTION_PROTOCOL.md)
+- [Dataset roadmap and unresolved decisions](docs/DECISIONS.md)
+- [Obligation-version schema](schemas/obligation_version.schema.json)
+- [Benchmark item schema](schemas/benchmark_item.schema.json)
 - [Data validation CLI](src/taarr/dataset.py)
 
 ## Contribution workflow
 
 1. Create a focused branch for each unit of work.
 2. Add or update tests with each behavior change.
-3. Run `pytest` and the dataset validator before committing.
+3. Run `pytest` and both dataset validators before committing.
 4. Never mark an item gold-verified until its official source and reasoning have been reviewed.
 5. Keep change logs and dataset versions reproducible.
 
