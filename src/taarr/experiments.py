@@ -98,7 +98,7 @@ def _resolve_item(item, obligations, policy, mode: str) -> dict[str, Any]:
         raise ValueError(f"{item.get('benchmark_item_id')}: invalid reference_date") from exc
     profile = item.get("entity_profile")
     if not isinstance(profile, dict):
-        raise ValueError(f"{item.get('benchmark_item_id')}: entity_profile must be an object")
+        raise TypeError(f"{item.get('benchmark_item_id')}: entity_profile must be an object")
     profile = json.loads(json.dumps(profile))
     if mode == "no_abstention":
         obligation = obligations.get(obligation_id)
