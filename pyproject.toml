@@ -29,6 +29,7 @@ ingest = [
 taarr-dataset = "taarr.dataset:main"
 taarr-sources = "taarr.sources:main"
 taarr-extract = "taarr.extract:main"
+taarr-annotation = "taarr.annotation:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
