@@ -59,18 +59,48 @@ def test_target_obligation_must_exist_in_gold_obligations():
     assert any("target_obligation_id" in error for error in validate_item(item))
 
 
+def test_target_obligation_must_have_target_role():
+    item = valid_item()
+    item["gold_obligations"][0]["role"] = "supporting"
+    assert any("role='target'" in error for error in validate_item(item))
+
+
+def test_target_version_must_have_date_evidence():
+    item = valid_item()
+    item["effective_dates"] = []
+    assert any("effective_dates must contain" in error for error in validate_item(item))
+
+
+def test_non_canonical_date_format_is_rejected():
+    item = valid_item()
+    item["reference_date"] = "20250101"
+    assert any("reference_date" in error for error in validate_item(item))
+
+
 def test_date_interval_must_be_ordered():
     item = valid_item()
     item["effective_dates"][0]["effective_to"] = "2023-01-01"
     assert any("effective_from must be earlier" in error for error in validate_item(item))
 
 
+def test_dual_annotated_requires_both_independent_labels():
+    item = valid_item()
+    item["annotation_status"] = "dual_annotated"
+    assert any("annotator_1.outcome" in error for error in validate_item(item))
+    assert any("annotator_2.outcome" in error for error in validate_item(item))
+
+
 def test_gold_verified_requires_two_annotators_and_adjudication():
     item = valid_item()
     item["annotation_status"] = "gold_verified"
-    assert any("annotator_1.outcome" in error for error in validate_item(item))
-    assert any("annotator_2.outcome" in error for error in validate_item(item))
-    assert any("adjudication.outcome" in error for error in validate_item(item))
+    item["annotations"] = {
+        "annotator_1": {"outcome": "Applicable"},
+        "annotator_2": {"outcome": "Indeterminate"},
+        "adjudication": {"outcome": "Indeterminate"},
+    }
+    assert validate_item(item) == []
+    item["gold_outcome"] = "Applicable"
+    assert any("must match adjudication.outcome" in error for error in validate_item(item))
 
 
 def test_empty_comment_only_ledger_is_valid_and_has_zero_items(tmp_path):
