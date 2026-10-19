@@ -4,6 +4,8 @@ This log makes design assumptions visible so we do not silently change the propo
 
 ## Adopted for the initial dataset implementation
 
+7. **No in-force version (D-001):** adopt `NoVersionPolicy.NOT_APPLICABLE`, following Review Paper Algorithm 1. If an obligation has no version in force on the reference date, emit `Not applicable` with the temporal-filter reason and evidence. Do not silently drop the target-obligation decision.
+
 1. **Benchmark unit:** one target-obligation decision per item (query + reference date + entity profile + target obligation). This gives the specified single `gold_outcome` a stable meaning. An item may also link supporting and related obligations.
 2. **Four outcomes:** `Applicable`, `Not applicable`, `Indeterminate`, `Conflict` only.
 3. **Temporal intervals:** represent validity as start-inclusive/end-exclusive. Keep publication date and effective date distinct. Null end date means "not recorded" until verified.
@@ -13,13 +15,13 @@ This log makes design assumptions visible so we do not silently change the propo
 
 ## Must resolve before labelling affected edge cases
 
-### D-001: No version is in force on the reference date
+### D-001: No version is in force on the reference date — DECIDED
 
 - **Build Plan**, "Novelty 2: Algorithm", page 3, says after temporal filtering: if no versions, continue/drop it ("superseded/not-yet-effective -> drop, don't hallucinate it in").
 - **Review Paper**, Algorithm 1 on page 13, says if the valid-version set is empty, emit `NOT_APPLICABLE` with reason "not in force on t".
-- **Why this matters:** absence of an in-force version is not automatically equivalent to a substantive finding of Not applicable. If the candidate is excluded from the considered obligations, no labelled decision may be emitted; if it is emitted, the gold label becomes Not applicable. These alternatives change benchmark item definition, precision/recall, and the product's user-facing semantics.
-- **Safe implementation stance:** do not author benchmark items for this edge case until the supervisor/project owner chooses one policy. Keep the engine behavior behind an explicitly named policy rather than silently conflating absence of a version with an entity-condition failure.
-- **Question for owner:** should an obligation with no valid version be dropped from the result set (Build Plan) or returned as `Not applicable` (Review Paper)?
+- **Decision:** adopt the Review Paper behavior: use `NoVersionPolicy.NOT_APPLICABLE`. Emit `Not applicable` for the target obligation, with a clear reason that no recorded version is in force on the reference date and with temporal-filter evidence. This is an explicit decision to report the considered target obligation, not to claim that its substantive applicability condition was evaluated and found false.
+- **Consequences:** keep the policy explicit and recorded in experiment reports; test the no-active-version case; do not drop these target-obligation decisions from the result set under the selected policy. Do not create gold labels for real regulatory records until the exact source/version timeline has been verified.
+- **Status:** project owner selected Option B in the conversation; the policy choice is frozen unless explicitly reopened.
 
 ### D-002: Missing facts versus false predicates
 
@@ -35,4 +37,4 @@ Only mark Conflict when authoritative in-force sources genuinely disagree and no
 
 ## Next decision gate
 
-Before scaling annotations, approve D-001 and D-003 in the annotation protocol and create executable tests for the chosen semantics. The corpus/data structure can be developed now without pretending these policy questions are settled.
+D-001 is decided as above. D-003 remains open: before labeling cases where applicability is unknown and exemptions/dependencies may settle the result, approve the ordering semantics and add executable tests. The corpus/data structure can continue to develop without pretending D-003 is settled.
