@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ArYa-n0104/RBI/blob/main/schemas/benchmark_item.schema.json",
+  "title": "TAARR Benchmark Item",
+  "description": "One target-obligation decision for a query, reference date, and entity profile. This schema describes structure, not legal validity.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "benchmark_item_id",
+    "query",
+    "reference_date",
+    "entity_profile",
+    "missing_facts_intentionally_omitted",
+    "target_obligation_id",
+    "gold_obligations",
+    "effective_dates",
+    "exemptions_dependencies",
+    "gold_outcome",
+    "gold_explanation",
+    "annotation_status",
+    "annotations",
+    "scenario_tags",
+    "split_group_id"
+  ],
+  "properties": {
+    "benchmark_item_id": {"type": "string", "minLength": 1},
+    "query": {"type": "string", "minLength": 1},
+    "reference_date": {"type": "string", "format": "date"},
+    "entity_profile": {"type": "object"},
+    "missing_facts_intentionally_omitted": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "target_obligation_id": {"type": "string", "minLength": 1},
+    "gold_obligations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["obligation_id", "version_id", "instrument_id", "clause_id", "official_url", "clause_text", "role"],
+        "properties": {
+          "obligation_id": {"type": "string", "minLength": 1},
+          "version_id": {"type": "string", "minLength": 1},
+          "instrument_id": {"type": "string", "minLength": 1},
+          "clause_id": {"type": "string", "minLength": 1},
+          "official_url": {"type": "string", "format": "uri", "pattern": "^https://"},
+          "clause_text": {"type": "string", "minLength": 1},
+          "role": {"enum": ["target", "supporting", "exemption", "dependency", "definition"]},
+          "source_publication_date": {"type": ["string", "null"], "format": "date"},
+          "effective_from": {"type": ["string", "null"], "format": "date"},
+          "effective_to": {"type": ["string", "null"], "format": "date"},
+          "amendment_lineage": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": true
+      }
+    },
+    "effective_dates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["version_id", "publication_date", "effective_from", "effective_to", "amendment_lineage"],
+        "properties": {
+          "version_id": {"type": "string", "minLength": 1},
+          "publication_date": {"type": "string", "format": "date"},
+          "effective_from": {"type": "string", "format": "date"},
+          "effective_to": {"type": ["string", "null"], "format": "date"},
+          "amendment_lineage": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": true
+      }
+    },
+    "exemptions_dependencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["relation_id", "relation_type", "from_clause_id", "to_clause_id", "official_url"],
+        "properties": {
+          "relation_id": {"type": "string", "minLength": 1},
+          "relation_type": {"enum": ["AMENDS", "REPEALS", "SUPERSEDES", "EXEMPTS", "EXCLUDES", "DEPENDS_ON", "DEFINES", "CROSS_REFERENCES", "OVERRULES"]},
+          "from_clause_id": {"type": "string", "minLength": 1},
+          "to_clause_id": {"type": "string", "minLength": 1},
+          "official_url": {"type": "string", "format": "uri", "pattern": "^https://"},
+          "effective_from": {"type": ["string", "null"], "format": "date"},
+          "effective_to": {"type": ["string", "null"], "format": "date"},
+          "condition": {},
+          "priority": {"type": ["integer", "null"]},
+          "verification_status": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "gold_outcome": {"enum": ["Applicable", "Not applicable", "Indeterminate", "Conflict"]},
+    "gold_explanation": {"type": "string", "minLength": 1},
+    "annotation_status": {"enum": ["draft", "dual_annotated", "adjudicated", "gold_verified"]},
+    "annotations": {"type": "object"},
+    "scenario_tags": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "split_group_id": {"type": "string", "minLength": 1}
+  }
+}
