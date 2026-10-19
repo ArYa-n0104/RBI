@@ -1,0 +1,103 @@
+export type Outcome = "Applicable" | "Not applicable" | "Indeterminate" | "Conflict";
+
+export interface HealthResponse {
+  status: string;
+  service: string;
+  policy_configured: boolean;
+  policy_required: boolean;
+  catalog: {
+    obligations: number;
+    versions: number;
+    clauses: number;
+  };
+}
+
+export interface ObligationSummary {
+  obligation_id: string;
+  instrument_id?: string | null;
+  instrument_title?: string | null;
+  regulator?: string | null;
+  clause_id?: string | null;
+  clause_summary?: string | null;
+  version_count: number;
+  verification_status?: string | null;
+}
+
+export interface EvidenceRecord {
+  kind?: string;
+  clause_id?: string;
+  version_id?: string;
+  obligation_id?: string;
+  source_url?: string;
+  verification_status?: string;
+  effective_from?: string;
+  effective_to?: string | null;
+  selected?: boolean;
+  relation_id?: string;
+  [key: string]: unknown;
+}
+
+export interface Resolution {
+  obligation_id: string;
+  outcome: Outcome | null;
+  reason: string;
+  reference_date: string;
+  version_id?: string | null;
+  clause_id?: string | null;
+  source_url?: string | null;
+  missing_facts?: string[];
+  evidence: EvidenceRecord[];
+  dependencies?: Resolution[];
+  retrieval_score?: number;
+}
+
+export interface QueryResponse {
+  query: string;
+  reference_date: string;
+  entity_profile: Record<string, unknown>;
+  policy: {
+    no_version: string;
+    missing_facts: string;
+    unknown_precedence: string;
+  };
+  retrieved_count: number;
+  outcomes: Resolution[];
+  notice: string;
+}
+
+export interface ClauseHistoryResponse {
+  clause_id: string;
+  version_count: number;
+  versions: Array<Record<string, unknown>>;
+}
+
+export interface BenchmarkMetric {
+  n: number;
+  accuracy: number | null;
+  macro_f1: number | null;
+  per_outcome: Record<
+    Outcome,
+    { support: number; precision: number; recall: number; f1: number }
+  >;
+  dropped_predictions: number;
+}
+
+export interface BenchmarkResponse {
+  system_config: string;
+  policy: Record<string, string>;
+  metrics: BenchmarkMetric;
+  items: Array<Record<string, unknown>>;
+  message: string;
+}
+
+export interface ObligationListResponse {
+  count: number;
+  items: ObligationSummary[];
+}
+
+export interface ExemptionsResponse {
+  clause_id: string;
+  reference_date: string | null;
+  count: number;
+  exemptions: Array<Record<string, unknown>>;
+}
