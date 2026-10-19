@@ -17,7 +17,7 @@ from datetime import date
 from pathlib import Path
 from typing import Any, Literal
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -135,7 +135,7 @@ def _load_gold_items(path: str | Path) -> list[dict[str, Any]]:
             except json.JSONDecodeError as exc:
                 raise ValueError(f"{source}:{line_number}: invalid JSON: {exc.msg}") from exc
             if not isinstance(item, dict):
-                raise ValueError(f"{source}:{line_number}: expected a JSON object")
+                raise TypeError(f"{source}:{line_number}: expected a JSON object")
             # Draft queue is a separate path and is never loaded by this function.
             if item.get("annotation_status") != "gold_verified":
                 continue
@@ -271,7 +271,7 @@ def create_app(
     @app.get("/api/v1/clause/{clause_id}/exemptions", tags=["catalog"])
     def get_clause_exemptions(
         clause_id: str,
-        reference_date: date | None = Query(default=None),
+        reference_date: date | None = None,
     ) -> dict[str, Any]:
         records = app.state.catalog.records_for_clause(clause_id)
         if not records:
