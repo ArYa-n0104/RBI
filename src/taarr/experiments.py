@@ -16,6 +16,8 @@ import time
 from dataclasses import replace
 from datetime import UTC, date, datetime
 from pathlib import Path
+
+from dotenv import load_dotenv
 from typing import Any
 
 from .catalog import load_catalog
@@ -30,6 +32,8 @@ from .reasoning import resolve_obligation
 
 
 def _policy_from_env() -> ResolverPolicy:
+    """Read policy from process environment or the project-root .env file."""
+    load_dotenv()
     values = (
         os.getenv("TAARR_NO_VERSION_POLICY", "").strip(),
         os.getenv("TAARR_MISSING_FACTS_POLICY", "").strip(),
