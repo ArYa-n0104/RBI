@@ -21,7 +21,7 @@ def _as_date(value: Any, field_name: str, *, nullable: bool = False) -> date | N
     if value is None and nullable:
         return None
     if not isinstance(value, str):
-        raise ValueError(f"{field_name} must be an ISO date string")
+        raise TypeError(f"{field_name} must be an ISO date string")
     try:
         parsed = date.fromisoformat(value)
     except ValueError as exc:
@@ -33,13 +33,13 @@ def _as_date(value: Any, field_name: str, *, nullable: bool = False) -> date | N
 
 def _object(value: Any, field_name: str) -> dict[str, Any]:
     if not isinstance(value, dict):
-        raise ValueError(f"{field_name} must be a JSON object")
+        raise TypeError(f"{field_name} must be a JSON object")
     return value
 
 
 def _array(value: Any, field_name: str) -> list[Any]:
     if not isinstance(value, list):
-        raise ValueError(f"{field_name} must be a JSON array")
+        raise TypeError(f"{field_name} must be a JSON array")
     return value
 
 
@@ -161,7 +161,7 @@ def load_catalog(path: str | Path = "data/obligations/obligations.jsonl") -> Cat
             except json.JSONDecodeError as exc:
                 raise ValueError(f"{source}:{line_number}: invalid JSON: {exc.msg}") from exc
             if not isinstance(record, dict):
-                raise ValueError(f"{source}:{line_number}: expected a JSON object")
+                raise TypeError(f"{source}:{line_number}: expected a JSON object")
 
             for field_name in (
                 "obligation_id", "version_id", "instrument_id", "regulator",
