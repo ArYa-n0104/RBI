@@ -1,18 +1,23 @@
 """Gold-only benchmark evaluation helpers."""
 from __future__ import annotations
+
 import json
-from pathlib import Path
 from collections import Counter
+from pathlib import Path
+
 from .dataset import OUTCOMES
+
 LABELS = sorted(OUTCOMES)
 
 def read_jsonl(path):
     rows=[]
     for number, raw in enumerate(Path(path).read_text(encoding='utf-8').splitlines(), 1):
         line=raw.strip()
-        if not line or line.startswith('#'): continue
+        if not line or line.startswith('#'):
+            continue
         try: item=json.loads(line)
-        except json.JSONDecodeError as exc: raise ValueError(f'{path}:{number}: invalid JSON') from exc
+        except json.JSONDecodeError as exc:
+            raise ValueError(f'{path}:{number}: invalid JSON') from exc
         if not isinstance(item, dict): raise TypeError(f'{path}:{number}: expected object')
         rows.append(item)
     return rows
