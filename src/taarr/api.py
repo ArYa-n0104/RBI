@@ -13,13 +13,13 @@ from __future__ import annotations
 import json
 import os
 import re
-from collections import Counter
 from datetime import date
 from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .catalog import Catalog, load_catalog
@@ -186,12 +186,18 @@ def _classification_metrics(
 def create_app(
     *,
     catalog: Catalog | None = None,
-    catalog_path: str | Path = "data/obligations/obligations.jsonl",
-    benchmark_path: str | Path = "data/benchmark/benchmark.jsonl",
+    catalog_path: str | Path | None = None,
+    benchmark_path: str | Path | None = None,
     resolver_policy: ResolverPolicy | None = None,
 ) -> FastAPI:
     """Application factory with injection points for reliable tests."""
-    loaded_catalog = catalog if catalog is not None else load_catalog(catalog_path)
+    effective_catalog_path = catalog_path or os.getenv(
+        "TAARR_OBLIGATIONS_PATH", "data/obligations/obligations.jsonl"
+    )
+    effective_benchmark_path = benchmark_path or os.getenv(
+        "TAARR_BENCHMARK_PATH", "data/benchmark/benchmark.jsonl"
+    )
+    loaded_catalog = catalog if catalog is not None else load_catalog(effective_catalog_path)
     selected_policy = resolver_policy if resolver_policy is not None else policy_from_environment()
 
     app = FastAPI(
@@ -204,7 +210,7 @@ def create_app(
     )
     app.state.catalog = loaded_catalog
     app.state.resolver_policy = selected_policy
-    app.state.benchmark_path = Path(benchmark_path)
+    app.state.benchmark_path = Path(effective_benchmark_path)
 
     origins = [
         origin.strip()
@@ -416,4 +422,5 @@ def create_app(
     return app
 
 
+load_dotenv()
 app = create_app()
