@@ -1,11 +1,13 @@
 """Command-line interface for gold-only benchmark evaluation."""
 from __future__ import annotations
+
 import argparse
 import json
 import sys
+
 from .evaluate import audit, read_jsonl, score
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> int:
     parser=argparse.ArgumentParser(description="Audit or score the TAARR benchmark.")
     sub=parser.add_subparsers(dest="command",required=True)
     a=sub.add_parser("audit",help="summarize labels and split leakage")
@@ -23,5 +25,5 @@ def main(argv=None):
         print(f"ERROR: {exc}",file=sys.stderr)
         return 2
 
-if __name__=="__main__":
+if __name__ == "__main__":
     raise SystemExit(main())
