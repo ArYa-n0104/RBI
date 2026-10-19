@@ -7,6 +7,7 @@ import sys
 
 from .evaluate import audit, read_jsonl, score
 
+
 def main(argv: list[str] | None = None) -> int:
     parser=argparse.ArgumentParser(description="Audit or score the TAARR benchmark.")
     sub=parser.add_subparsers(dest="command",required=True)
