@@ -73,8 +73,9 @@ def _set_missing_false(condition: dict[str, Any], profile: dict[str, Any]) -> No
 
 
 def _catalog_variant(catalog, mode: str):
+    """Return an obligation mapping for every variant, including the full resolver."""
     if mode not in {"full", "no_temporal", "no_exceptions_dependencies"}:
-        return catalog
+        mode = "full"
     updated = {}
     for obligation_id, obligation in catalog.obligations.items():
         versions = obligation.versions
@@ -86,7 +87,6 @@ def _catalog_variant(catalog, mode: str):
             versions = tuple(replace(v, exemptions=(), dependencies=()) for v in versions)
         updated[obligation_id] = replace(obligation, versions=tuple(versions))
     return updated
-
 
 def _resolve_item(item, obligations, policy, mode: str) -> dict[str, Any]:
     obligation_id = item.get("target_obligation_id")
