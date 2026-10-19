@@ -209,6 +209,10 @@ Read [Research evaluation protocol](docs/RESEARCH_EVALUATION.md) for the propose
 
 With `.env` policies configured, run `python -m taarr.experiments --benchmark data/benchmark/benchmark.jsonl --catalog data/obligations/obligations.jsonl --output reports/experiments/latest.json`. See [Experiment Runner](docs/EXPERIMENT_RUNNER.md). Only `gold_verified` rows are scored; with the current empty gold benchmark, metrics correctly remain unavailable.
 
+### Audit provenance and benchmark readiness
+
+Run `python -m taarr.provenance_audit` to check official-source URL domains, duplicate IDs, temporal interval structure, gold clause/version references, adjudication metadata, and split leakage. An empty gold benchmark remains `needs_review`; a structural pass is not legal verification. See [Provenance audit](docs/PROVENANCE_AUDIT.md).
+
 ## Core docs
 
 - [Dataset schema and annotation guide](docs/DATASET_SPEC.md)
