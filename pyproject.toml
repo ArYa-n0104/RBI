@@ -32,6 +32,7 @@ taarr-extract = "taarr.extract:main"
 taarr-annotation = "taarr.annotation:main"
 taarr-evaluate = "taarr.evaluate_cli:main"
 taarr-experiments = "taarr.experiments:main"
+taarr-provenance-audit = "taarr.provenance_audit:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
