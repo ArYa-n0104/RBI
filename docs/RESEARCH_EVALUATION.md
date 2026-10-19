@@ -7,7 +7,7 @@ This document operationalizes the supplied Build Plan. It distinguishes implemen
 1. **Dataset:** manually verified entity-profile + reference-date + clause-version + four-outcome RBI/SEBI benchmark. Target 100–200 items, beginning with a narrow set of instruments with amendment history. The current benchmark is empty; this contribution is not complete.
 2. **Algorithm:** deterministic obligation-level resolution integrating temporal validity, three-valued applicability conditions, exemption/dependency handling and four outcomes. Demonstrate value with comparisons and ablations.
 3. **Differentiating capability:** clause/version-level provenance trail with amendment, exemption and dependency links; test evidence completeness and citation correctness.
-4. **System contribution:** reproducible React + FastAPI + PostgreSQL/pgvector + Neo4j architecture, with LLMs confined to candidate extraction and explanation drafting. Database containers and schemas are provided; the existing local app continues to use JSONL/in-memory bootstrap unless optional adapters are configured.
+4. **System contribution:** portable React + FastAPI architecture using JSONL files and an in-memory resolver by default. Avoid external services for reproducibility; if persistence is required later, prefer Python built-in SQLite before considering external database infrastructure.
 
 ## Dataset design
 Each item labels one target obligation for a natural-language query, reference date and entity profile. Preserve publication date separately from effective date. Store stable obligation IDs separately from clause-version IDs. Split by obligation/amendment lineage, not random rows, to prevent leakage.
