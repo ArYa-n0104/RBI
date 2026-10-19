@@ -6,6 +6,7 @@ score draft rows and reports metrics as unavailable when the gold set is empty.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import platform
@@ -148,6 +149,8 @@ def run_experiments(benchmark_path: str, catalog_path: str, policy: ResolverPoli
             "started_at_utc": datetime.now(UTC).isoformat(),
             "git_commit": commit_sha,
             "python_version": platform.python_version(),
+            "benchmark_sha256": hashlib.sha256(Path(benchmark_path).read_bytes()).hexdigest(),
+            "catalog_sha256": hashlib.sha256(Path(catalog_path).read_bytes()).hexdigest(),
         },
         "benchmark_path": benchmark_path,
         "catalog_path": catalog_path,
