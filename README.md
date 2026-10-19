@@ -212,6 +212,7 @@ Read [Research evaluation protocol](docs/RESEARCH_EVALUATION.md) for the propose
 - [Clause-level ingestion protocol](docs/INGESTION_PROTOCOL.md)
 - [Dataset roadmap and unresolved decisions](docs/DECISIONS.md)
 - [Independent annotation and Cohen's kappa protocol](docs/ANNOTATION_PROTOCOL.md)
+- [Evaluation next steps](docs/EVALUATION_NEXT_STEPS.md)
 - [Research evaluation protocol](docs/RESEARCH_EVALUATION.md)
 - [Architecture implementation status](docs/ARCHITECTURE_STATUS.md)
 - [Clause-level provenance and audit invariants](docs/PROVENANCE_AND_AUDIT.md)
