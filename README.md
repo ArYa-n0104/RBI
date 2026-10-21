@@ -33,13 +33,58 @@ These labels are not interchangeable. In particular, a missing fact is not evide
 
 ## Repository status
 
-All five project phases are complete:
+_Last updated: 2026-10-22._
 
-- **60 regulatory obligations** from the RBI KYC Master Direction and SEBI LODR Regulations, all with `source_text_human_confirmed` verification status.
-- **127 benchmark items**, all `gold_verified` after two independent human annotation passes (zero disagreements) plus source-text adjudication against the live official documents.
-- **Real evaluation numbers:** n=127, accuracy=1.0, macro F1=0.75 (four-class: Applicable, Not applicable, Indeterminate, Conflict).
-- **208 automated tests** across 10 test files, all passing.
-- **Circularity caveat:** the 100% accuracy reflects internal consistency, not proven real-world correctness — the benchmark's expected outcomes were derived from the same resolver being evaluated. Breaking this circularity (independent legal review of expected outcomes) is the next research step. See `docs/PENDING_TWO_PERSON_VERIFICATION.txt` and `docs/DECISIONS.md` (D-001 through D-009) for the full decision trail.
+All five original project phases are complete, and a guided, non-expert-facing
+layer has since been built on top of the engine:
+
+- **60 regulatory obligations** from the RBI KYC Master Direction (42) and SEBI LODR
+  Regulations (18), all with `source_text_human_confirmed` verification status.
+- **127 benchmark items**, all `gold_verified` after two independent human annotation
+  passes (zero disagreements) plus source-text adjudication against the live
+  official documents.
+- **Real evaluation numbers:** n=127, accuracy=1.0, macro F1=0.75 (four-class:
+  Applicable, Not applicable, Indeterminate, Conflict).
+- **242 automated tests** across 14 test files, all passing; `ruff` clean.
+- **Circularity caveat:** the 100% accuracy reflects internal consistency, not
+  proven real-world correctness — the benchmark's expected outcomes were derived
+  from the same resolver being evaluated. Breaking this circularity (independent
+  legal review of expected outcomes) is the next research step. See
+  `docs/PENDING_TWO_PERSON_VERIFICATION.txt` and `docs/DECISIONS.md` (D-001
+  through D-009) for the full decision trail.
+- **Guided "Check my rules" flow** (new): a non-expert describes their
+  organisation in plain English, confirms a short list of answers, and gets a
+  plain-English checklist of which of the 60 obligations apply — each one
+  linked to its official circular and to the exact clause text. Built from a
+  **closed 43-fact registry** (31 RBI-only, 12 SEBI-only, no overlap; a test
+  enforces that the registry always matches exactly what the obligations use).
+  A **circular browser** lets a user instead start from the RBI KYC Master
+  Direction or the SEBI LODR Regulations and open any of their rules directly.
+- **Optional Gemini features** (autofill the guided form; the B6 AI
+  cross-check baseline) are not required to use the app and never decide an
+  outcome — the deterministic resolver always does. Both read the API key and
+  model from `.env`, re-read on every click, and each one is **exactly one
+  API call** per click (the cross-check batches every selected item into a
+  single request). See "Gemini key, model and API usage" below.
+
+### What's left
+
+- **Break the circularity above** — the single biggest open item. The 100%
+  accuracy is the resolver agreeing with labels it effectively generated; an
+  independent second reviewer (a person, not this codebase) needs to check a
+  sample of the 127 gold items against the official text without seeing
+  TAARR's own output first.
+- **B6 (Gemini cross-check) itself is weak and inconsistent** — see the
+  "AI cross-check" section below; treat its numbers as a signal, not a result.
+- The dataset covers two instruments (RBI KYC, SEBI LODR). Extending to more
+  RBI/SEBI instruments, or adding date-boundary benchmark items (none exist
+  today — see `docs/RESEARCH_EVALUATION.md`), is future work, not done.
+- B1–B4 (lexical retrieval, no-temporal, no-abstention, no-exemptions
+  baselines) exist as ablations of B5, not as separately implemented
+  retrieval systems (no PostgreSQL/pgvector/Neo4j — see "Planned
+  architecture" above, which remains aspirational past the JSONL + in-memory
+  resolver actually shipped).
+- The paper/write-up described in the original Build Plan has not been written.
 
 ## Local setup
 
@@ -131,9 +176,31 @@ The UI opens on **Check my rules**, the guided flow for someone who does not kno
 
 ### Check my rules (guided flow)
 
-1. **Describe** your organisation in plain English, pick the date to check against, and choose RBI, SEBI or both. Optionally press *Autofill the answers*: Gemini is shown only the closed list of the 43 facts the catalogue can test, may return nothing else, and must quote your own words for every answer; the server re-checks every value and drops anything unsupported. Gemini never decides applicability.
-2. **Check answers** — every fact is a plain-English question with Yes / No / Not sure, a choice list, or a number box. Nothing is assumed: an unanswered question stays unknown.
-3. **Your checklist** — all obligations resolved by the deterministic engine and grouped into *Applies to you*, *Need one more answer*, *Does not apply* and *Conflicting*, with the exact question that would settle each unknown, a ranked "answer these to settle more rules" panel that re-runs as you answer, the official source link for every row, and a plain-text download.
+Two ways in, both leading to the same rule dialog:
+
+- **Describe my organisation** (default): a 3-step guided flow.
+  1. **Describe** your organisation in plain English, pick the date to check
+     against, and choose RBI, SEBI or both. Optionally press *Autofill the
+     answers*: Gemini sees only the closed list of 43 facts the catalogue can
+     test, may return nothing else, and must quote your own words for every
+     answer; the server re-checks every value and drops anything
+     unsupported. Gemini never decides applicability — one click is one API
+     call either way.
+  2. **Confirm answers** — only the answers found in your text plus the 6
+     questions that would settle the most rules; the full 43-question list is
+     one click away. Each control is Yes/No/Not sure, a choice list, or a
+     number box. An unanswered question stays unknown, never assumed false.
+  3. **Your checklist** — leads with *Apply to you*; rules that only apply in
+     a particular situation (e.g. a trust customer, a foreign student) are
+     grouped together with their own questions so they don't clutter the main
+     list; anything ruled out is folded away. Every row opens a dialog with
+     the plain-English result, the exact question(s) that decide it (answer
+     them right there), the official clause text, and a button to the
+     official circular. Also: a plain-text download.
+- **Browse circulars and rules**: pick the RBI KYC Master Direction or the
+  SEBI LODR Regulations directly, search across all 60 rules, and open any
+  one in the same dialog — for a user who already knows which circular they
+  want rather than describing their organisation.
 
 Endpoints behind it: `GET /api/v1/facts`, `POST /api/v1/facts/extract`, `POST /api/v1/checklist`.
 
