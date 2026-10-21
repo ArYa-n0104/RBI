@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import date
 
 import pytest
@@ -117,8 +118,56 @@ def test_clause_not_found_is_404(client):
     assert client.get("/api/v1/clause/no-such-clause").status_code == 404
 
 
-def test_benchmark_does_not_score_draft_queue(client):
+def test_benchmark_scores_only_gold_verified_rows(client):
+    # As of 2026-10-21, data/benchmark/benchmark.jsonl holds 125 real
+    # gold_verified items (see docs/DECISIONS.md D-009). This test checks the
+    # loader's own safety property -- draft-status rows are never scored --
+    # not the resulting accuracy number, which is expected to be high due to
+    # documented circularity (see docs/ILLUSTRATIVE_EVAL.md,
+    # docs/EVALUATION_NEXT_STEPS.md): the benchmark's facts/expected outcomes
+    # were generated from the same rule engine being evaluated.
     response = client.post("/api/v1/benchmark/run", json={"system_config": "TAARR"})
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["metrics"]["n"] == 125
+    assert payload["message"] == "Scored gold-verified benchmark items only."
+    assert len(payload["items"]) == 125
+    # The draft queue (2 withheld items, e.g. the paragraph-2/38(e) exemption
+    # question still pending clarification) must never appear here.
+    scored_ids = {row["benchmark_item_id"] for row in payload["items"]}
+    assert "TAARR-DRAFT-0004" not in scored_ids
+    assert "TAARR-DRAFT-0005" not in scored_ids
+
+
+def test_benchmark_run_excludes_non_gold_rows(tmp_path, client):
+    # A row that is not annotation_status == "gold_verified" must never be
+    # scored, even if it ends up in the benchmark ledger file by mistake.
+    mixed_path = tmp_path / "mixed_benchmark.jsonl"
+    mixed_path.write_text(
+        "\n".join(
+            [
+                json.dumps(
+                    {
+                        "benchmark_item_id": "FAKE-DRAFT-0001",
+                        "annotation_status": "draft",
+                        "target_obligation_id": "RBI-KYC-P38E-DUE-NOTICES",
+                        "reference_date": "2025-07-01",
+                        "entity_profile": {"is_rbi_regulated_entity": True},
+                        "gold_outcome": "Applicable",
+                    }
+                ),
+            ]
+        ),
+        encoding="utf-8",
+    )
+    draft_only_client = TestClient(
+        create_app(
+            catalog=load_catalog("data/obligations/obligations.jsonl"),
+            benchmark_path=str(mixed_path),
+            resolver_policy=policy(),
+        )
+    )
+    response = draft_only_client.post("/api/v1/benchmark/run", json={"system_config": "TAARR"})
     assert response.status_code == 200
     payload = response.json()
     assert payload["metrics"]["n"] == 0
