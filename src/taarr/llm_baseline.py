@@ -30,7 +30,7 @@ from .models import Outcome
 GEMINI_API_URL = (
     "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 )
-DEFAULT_MODEL = "gemini-2.0-flash"
+DEFAULT_MODEL = "gemini-2.5-flash-lite"
 DEFAULT_TIMEOUT_SECONDS = 30.0
 
 _OUTCOME_LABELS = [outcome.value for outcome in Outcome]
