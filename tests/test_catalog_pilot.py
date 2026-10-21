@@ -50,7 +50,7 @@ PARA17_TARGET = "RBI-KYC-PARA17-OTP-EKYC-BALANCE-CAP"
 
 def test_pilot_catalog_loads_both_obligations_with_their_exemptions():
     catalog = load_catalog(CATALOG_PATH)
-    assert catalog.obligation_count == 4
+    assert catalog.obligation_count == 11
     version = catalog.obligations[TARGET].versions[0]
     assert len(version.exemptions) == 1
     assert version.exemptions[0].relation_id == "RBI-KYC-PARA2-SMALL-ACCOUNT-PROVISO"
@@ -81,6 +81,134 @@ def test_para17_balance_cap_not_applicable_for_full_kyc_account():
 
 def test_para17_balance_cap_indeterminate_when_account_type_unknown():
     outcome = _resolve_for(PARA17_TARGET, date(2025, 9, 1), {})
+    assert outcome == Outcome.INDETERMINATE
+
+
+WALKIN_TARGET = "RBI-KYC-PARA13-WALKIN-THRESHOLD"
+PEP_TARGET = "RBI-KYC-PARA41A-PEP-APPROVAL"
+VCIP_TARGET = "RBI-KYC-PARA18C-VCIP-DATA-LOCALIZATION"
+NONF2F_TARGET = "RBI-KYC-PARA40F-NONFACETOFACE-HIGHRISK"
+RETENTION_TARGET = "RBI-KYC-PARA46A-RECORD-RETENTION"
+NBFC_BL_TARGET = "RBI-NBFC-SBR-BASE-LAYER-CLASSIFICATION"
+NBFC_ML_TARGET = "RBI-NBFC-SBR-MIDDLE-LAYER-CLASSIFICATION"
+
+
+def test_catalog_grew_to_eleven_obligations():
+    catalog = load_catalog(CATALOG_PATH)
+    assert catalog.obligation_count == 11
+
+
+def test_walkin_threshold_applies_at_or_above_fifty_thousand():
+    outcome = _resolve_for(
+        WALKIN_TARGET, date(2025, 9, 1),
+        {"is_walk_in_customer": True, "transaction_amount_rupees": 75000},
+    )
+    assert outcome == Outcome.APPLICABLE
+
+
+def test_walkin_threshold_not_applicable_below_fifty_thousand():
+    outcome = _resolve_for(
+        WALKIN_TARGET, date(2025, 9, 1),
+        {"is_walk_in_customer": True, "transaction_amount_rupees": 20000},
+    )
+    assert outcome == Outcome.NOT_APPLICABLE
+
+
+def test_walkin_threshold_indeterminate_when_amount_unknown():
+    outcome = _resolve_for(WALKIN_TARGET, date(2025, 9, 1), {"is_walk_in_customer": True})
+    assert outcome == Outcome.INDETERMINATE
+
+
+def test_pep_approval_applies_for_pep_customer():
+    outcome = _resolve_for(PEP_TARGET, date(2025, 9, 1), {"is_politically_exposed_person": True})
+    assert outcome == Outcome.APPLICABLE
+
+
+def test_pep_approval_not_applicable_for_ordinary_customer():
+    outcome = _resolve_for(PEP_TARGET, date(2025, 9, 1), {"is_politically_exposed_person": False})
+    assert outcome == Outcome.NOT_APPLICABLE
+
+
+def test_vcip_data_localization_applies_when_vcip_used():
+    outcome = _resolve_for(VCIP_TARGET, date(2025, 9, 1), {"uses_vcip_onboarding": True})
+    assert outcome == Outcome.APPLICABLE
+
+
+def test_vcip_data_localization_not_applicable_without_vcip():
+    outcome = _resolve_for(VCIP_TARGET, date(2025, 9, 1), {"uses_vcip_onboarding": False})
+    assert outcome == Outcome.NOT_APPLICABLE
+
+
+def test_nonf2f_highrisk_applies_for_non_face_to_face_onboarding():
+    outcome = _resolve_for(NONF2F_TARGET, date(2025, 9, 1), {"is_non_face_to_face_onboarding": True})
+    assert outcome == Outcome.APPLICABLE
+
+
+def test_nonf2f_highrisk_not_applicable_for_in_person_onboarding():
+    outcome = _resolve_for(NONF2F_TARGET, date(2025, 9, 1), {"is_non_face_to_face_onboarding": False})
+    assert outcome == Outcome.NOT_APPLICABLE
+
+
+def test_record_retention_applies_to_rbi_regulated_entity():
+    outcome = _resolve_for(RETENTION_TARGET, date(2025, 9, 1), {"is_rbi_regulated_entity": True})
+    assert outcome == Outcome.APPLICABLE
+
+
+def test_record_retention_not_applicable_outside_scope():
+    outcome = _resolve_for(RETENTION_TARGET, date(2025, 9, 1), {"is_rbi_regulated_entity": False})
+    assert outcome == Outcome.NOT_APPLICABLE
+
+
+def test_nbfc_base_layer_applies_below_threshold():
+    outcome = _resolve_for(
+        NBFC_BL_TARGET, date(2022, 11, 1),
+        {"is_deposit_taking_nbfc": False, "asset_size_crore": 400},
+    )
+    assert outcome == Outcome.APPLICABLE
+
+
+def test_nbfc_base_layer_not_applicable_above_threshold():
+    outcome = _resolve_for(
+        NBFC_BL_TARGET, date(2022, 11, 1),
+        {"is_deposit_taking_nbfc": False, "asset_size_crore": 5000},
+    )
+    assert outcome == Outcome.NOT_APPLICABLE
+
+
+def test_nbfc_base_layer_not_yet_effective_before_october_2022():
+    outcome = _resolve_for(
+        NBFC_BL_TARGET, date(2022, 1, 1),
+        {"is_deposit_taking_nbfc": False, "asset_size_crore": 400},
+    )
+    assert outcome == Outcome.NOT_APPLICABLE
+
+
+def test_nbfc_middle_layer_applies_for_any_deposit_taking_nbfc():
+    outcome = _resolve_for(
+        NBFC_ML_TARGET, date(2022, 11, 1),
+        {"is_deposit_taking_nbfc": True, "asset_size_crore": 200},
+    )
+    assert outcome == Outcome.APPLICABLE
+
+
+def test_nbfc_middle_layer_applies_via_asset_size_alone():
+    outcome = _resolve_for(
+        NBFC_ML_TARGET, date(2022, 11, 1),
+        {"is_deposit_taking_nbfc": False, "asset_size_crore": 3000},
+    )
+    assert outcome == Outcome.APPLICABLE
+
+
+def test_nbfc_middle_layer_not_applicable_below_both_tests():
+    outcome = _resolve_for(
+        NBFC_ML_TARGET, date(2022, 11, 1),
+        {"is_deposit_taking_nbfc": False, "asset_size_crore": 200},
+    )
+    assert outcome == Outcome.NOT_APPLICABLE
+
+
+def test_nbfc_middle_layer_indeterminate_when_deposit_status_unknown():
+    outcome = _resolve_for(NBFC_ML_TARGET, date(2022, 11, 1), {"asset_size_crore": 200})
     assert outcome == Outcome.INDETERMINATE
 
 
