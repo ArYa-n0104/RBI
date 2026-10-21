@@ -100,3 +100,50 @@ def test_api_endpoints(monkeypatch):
     assert c.post("/api/v1/facts/extract", json={"description": DESC}).status_code == 422
     ok = c.post("/api/v1/facts/extract", json={"description": DESC, "api_key": "k"})
     assert ok.status_code == 200 and ok.json()["facts"] == {"is_rbi_regulated_entity": True}
+
+
+CHECKLIST_URL = "/api/v1/checklist"
+POLICY = {
+    "TAARR_NO_VERSION_POLICY": "NOT_APPLICABLE",
+    "TAARR_MISSING_FACTS_POLICY": "KLEENE",
+    "TAARR_UNKNOWN_PRECEDENCE_POLICY": "DEFINITIVE_RULES_FIRST",
+}
+
+
+def _client(monkeypatch):
+    for name, value in POLICY.items():
+        monkeypatch.setenv(name, value)
+    return TestClient(create_app())
+
+
+def test_checklist_covers_every_obligation(monkeypatch):
+    c = _client(monkeypatch)
+    body = c.post(CHECKLIST_URL, json={"entity_profile": {}, "reference_date": "2025-07-01"}).json()
+    assert body["total"] == 60
+    assert sum(body["counts"].values()) == 60
+    # With no facts supplied, nothing is silently assumed false.
+    assert body["counts"]["need_more_info"] > 0
+
+
+def test_checklist_next_questions_are_plain_english_and_ranked(monkeypatch):
+    c = _client(monkeypatch)
+    body = c.post(CHECKLIST_URL, json={"entity_profile": {}, "reference_date": "2025-07-01"}).json()
+    questions = body["next_questions"]
+    assert questions and questions[0]["unblocks"] >= questions[-1]["unblocks"]
+    assert all(q["question"].endswith("?") for q in questions)
+
+
+def test_checklist_regulator_filter_and_answers_reduce_unknowns(monkeypatch):
+    c = _client(monkeypatch)
+    sebi = c.post(CHECKLIST_URL, json={
+        "entity_profile": {}, "reference_date": "2025-07-01", "regulator": "SEBI",
+    }).json()
+    assert sebi["total"] == 18
+    assert {row["regulator"] for rows in sebi["groups"].values() for row in rows} == {"SEBI"}
+
+    answered = c.post(CHECKLIST_URL, json={
+        "entity_profile": {"is_rbi_regulated_entity": True, "risk_category": "high"},
+        "reference_date": "2025-07-01",
+    }).json()
+    assert answered["counts"]["applies"] > 0
+    assert answered["counts"]["need_more_info"] < 60

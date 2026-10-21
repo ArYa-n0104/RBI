@@ -42,6 +42,13 @@ STOP_WORDS = {
 }
 
 
+POLICY_NOT_CONFIGURED_DETAIL = (
+    "Resolution policy is not configured. Set TAARR_NO_VERSION_POLICY, "
+    "TAARR_MISSING_FACTS_POLICY and TAARR_UNKNOWN_PRECEDENCE_POLICY after "
+    "resolving the documented algorithm ambiguity (GitHub issue #1)."
+)
+
+
 class QueryRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -82,6 +89,16 @@ class LlmCrossCheckRequest(BaseModel):
     api_key: str | None = Field(default=None, min_length=1, max_length=400)
     model: str = Field(default=DEFAULT_MODEL, max_length=100)
     limit: int = Field(default=10, ge=1, le=127)
+
+
+class ChecklistRequest(BaseModel):
+    """Run every obligation in the catalog against one entity profile."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    entity_profile: dict[str, Any] = Field(default_factory=dict)
+    reference_date: date
+    regulator: Literal["RBI", "SEBI"] | None = None
 
 
 class FactExtractionRequest(BaseModel):
@@ -340,11 +357,7 @@ def create_app(
         if active_policy is None:
             raise HTTPException(
                 status_code=503,
-                detail=(
-                    "Resolution policy is not configured. Set TAARR_NO_VERSION_POLICY, "
-                    "TAARR_MISSING_FACTS_POLICY and TAARR_UNKNOWN_PRECEDENCE_POLICY after "
-                    "resolving the documented algorithm ambiguity (GitHub issue #1)."
-                ),
+                detail=POLICY_NOT_CONFIGURED_DETAIL,
             )
 
         if request.obligation_ids is not None:
@@ -525,6 +538,114 @@ def create_app(
                 "This is an independent LLM cross-check, not a verification of TAARR's correctness. "
                 "The model never sees TAARR's own outcome. Agreement is a convenience signal only and "
                 "does not replace the project's required human two-person gold verification."
+            ),
+        }
+
+    @app.post("/api/v1/checklist", tags=["resolution"])
+    def build_checklist(request: ChecklistRequest) -> dict[str, Any]:
+        """Resolve all obligations for one profile and group them for a reader.
+
+        Nothing is guessed: a fact the user did not answer stays unknown, so the
+        obligation lands in "need_more_info" together with the exact plain-English
+        question that would settle it.
+        """
+        active_policy = app.state.resolver_policy
+        if active_policy is None:
+            raise HTTPException(status_code=503, detail=POLICY_NOT_CONFIGURED_DETAIL)
+
+        catalog = app.state.catalog
+        registry = app.state.fact_registry
+        groups: dict[str, list[dict[str, Any]]] = {
+            "applies": [], "does_not_apply": [], "need_more_info": [], "conflict": [], "dropped": [],
+        }
+        blockers: dict[str, list[str]] = {}
+
+        for obligation_id in sorted(catalog.obligations):
+            records = catalog.records_for_obligation(obligation_id)
+            latest = max(records, key=lambda item: item.get("effective_from", "")) if records else {}
+            if request.regulator and latest.get("regulator") != request.regulator:
+                continue
+            result = resolve_obligation(
+                obligation_id, catalog.obligations, request.reference_date,
+                request.entity_profile, active_policy,
+            )
+            row: dict[str, Any] = {
+                "obligation_id": obligation_id,
+                "regulator": latest.get("regulator"),
+                "instrument_title": latest.get("instrument_title"),
+                "clause_id": latest.get("clause_id"),
+                "clause_summary": latest.get("clause_summary"),
+                "action": latest.get("action"),
+                "modality": latest.get("modality"),
+                "deadline": latest.get("stated_implementation_deadline"),
+                "verification_status": latest.get("verification_status"),
+            }
+            if result is None:
+                row.update({
+                    "outcome": None,
+                    "reason": "No version of this rule was in force on the chosen date.",
+                    "source_url": latest.get("source_url"),
+                    "missing": [],
+                    "evidence": [],
+                })
+                groups["dropped"].append(row)
+                continue
+
+            payload = result.to_dict()
+            missing = []
+            for key in payload["missing_facts"]:
+                fact = registry.facts.get(key)
+                missing.append({
+                    "key": key,
+                    "question": fact["question"] if fact else f"Unknown fact: {key}",
+                })
+                blockers.setdefault(key, []).append(obligation_id)
+            row.update({
+                "outcome": payload["outcome"],
+                "reason": payload["reason"],
+                "source_url": payload["source_url"] or latest.get("source_url"),
+                "version_id": payload["version_id"],
+                "missing": missing,
+                "evidence": payload["evidence"],
+                "dependencies": payload["dependencies"],
+            })
+            bucket = {
+                "Applicable": "applies",
+                "Not applicable": "does_not_apply",
+                "Indeterminate": "need_more_info",
+                "Conflict": "conflict",
+            }[payload["outcome"]]
+            groups[bucket].append(row)
+
+        # Show the rules that are closest to being settled first.
+        groups["need_more_info"].sort(key=lambda row: (len(row["missing"]), row["obligation_id"]))
+
+        next_questions = []
+        for key, obligation_ids in blockers.items():
+            fact = registry.facts.get(key)
+            if fact is None:
+                continue
+            next_questions.append({
+                **fact,
+                "unblocks": len(obligation_ids),
+                "unblocks_obligation_ids": sorted(obligation_ids),
+                "group_label": registry.groups.get(fact["group"], fact["group"]),
+            })
+        next_questions.sort(key=lambda item: (-item["unblocks"], item["key"]))
+
+        return {
+            "reference_date": request.reference_date.isoformat(),
+            "regulator": request.regulator,
+            "policy": _policy_to_dict(active_policy),
+            "answered_fact_count": len(request.entity_profile),
+            "counts": {name: len(rows) for name, rows in groups.items()},
+            "total": sum(len(rows) for rows in groups.values()),
+            "groups": groups,
+            "next_questions": next_questions,
+            "notice": (
+                "Deterministic result from the rule catalogue, not legal advice. Unanswered questions "
+                "stay unknown -- they are never assumed to be no. Check the linked source text before "
+                "you act on any row."
             ),
         }
 

@@ -127,7 +127,15 @@ npm run dev
 
 Open http://localhost:5173. Vite proxies `/api` and `/health` to the backend on port 8000. Use Node.js 22 for the frontend toolchain.
 
-The UI provides the reasoning console, entity-profile inputs, date selection, clause/version explorer, source provenance, gold-only benchmark dashboard, and an AI cross-check tab. All 60 obligations are `source_text_human_confirmed` and the benchmark dashboard shows real evaluation results (n=127, accuracy=1.0, macro F1=0.75).
+The UI opens on **Check my rules**, the guided flow for someone who does not know the rule book. The other tabs are the reasoning console, clause/version explorer, gold-only benchmark dashboard and AI cross-check. All 60 obligations are `source_text_human_confirmed` and the benchmark dashboard shows real evaluation results (n=127, accuracy=1.0, macro F1=0.75).
+
+### Check my rules (guided flow)
+
+1. **Describe** your organisation in plain English, pick the date to check against, and choose RBI, SEBI or both. Optionally press *Fill the answers with AI*: Gemini is shown only the closed list of the 43 facts the catalogue can test, may return nothing else, and must quote your own words for every answer; the server re-checks every value and drops anything unsupported. Gemini never decides applicability.
+2. **Check answers** — every fact is a plain-English question with Yes / No / Not sure, a choice list, or a number box. Nothing is assumed: an unanswered question stays unknown.
+3. **Your checklist** — all obligations resolved by the deterministic engine and grouped into *Applies to you*, *Need one more answer*, *Does not apply* and *Conflicting*, with the exact question that would settle each unknown, a ranked "answer these to settle more rules" panel that re-runs as you answer, the official source link for every row, and a plain-text download.
+
+Endpoints behind it: `GET /api/v1/facts`, `POST /api/v1/facts/extract`, `POST /api/v1/checklist`.
 
 ### AI cross-check (optional B6 baseline)
 

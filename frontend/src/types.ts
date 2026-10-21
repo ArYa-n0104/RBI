@@ -120,3 +120,73 @@ export interface LlmCrossCheckResponse {
   items: LlmCrossCheckItem[];
   notice: string;
 }
+
+export type FactType = "boolean" | "enum" | "number";
+
+export interface FactDefinition {
+  key: string;
+  group: string;
+  type: FactType;
+  question: string;
+  values?: string[];
+  unit?: string;
+  min?: number;
+  max?: number;
+}
+
+export interface FactListResponse {
+  groups: Record<string, string>;
+  facts: FactDefinition[];
+}
+
+export interface FactExtractionResponse {
+  facts: Record<string, unknown>;
+  evidence: Record<string, string>;
+  rejected: Array<{ key: string; reason: string }>;
+  unrecognised: string[];
+  notice: string;
+}
+
+export interface ChecklistRow {
+  obligation_id: string;
+  regulator?: string | null;
+  instrument_title?: string | null;
+  clause_id?: string | null;
+  clause_summary?: string | null;
+  action?: string | null;
+  modality?: string | null;
+  deadline?: string | null;
+  verification_status?: string | null;
+  outcome: Outcome | null;
+  reason: string;
+  source_url?: string | null;
+  version_id?: string | null;
+  missing: Array<{ key: string; question: string }>;
+  evidence: EvidenceRecord[];
+  dependencies?: Resolution[];
+}
+
+export type ChecklistBucket =
+  | "applies"
+  | "does_not_apply"
+  | "need_more_info"
+  | "conflict"
+  | "dropped";
+
+export interface ChecklistNextQuestion extends FactDefinition {
+  unblocks: number;
+  unblocks_obligation_ids: string[];
+  group_label: string;
+}
+
+export interface ChecklistResponse {
+  reference_date: string;
+  regulator: "RBI" | "SEBI" | null;
+  policy: Record<string, string>;
+  answered_fact_count: number;
+  counts: Record<ChecklistBucket, number>;
+  total: number;
+  groups: Record<ChecklistBucket, ChecklistRow[]>;
+  next_questions: ChecklistNextQuestion[];
+  notice: string;
+}

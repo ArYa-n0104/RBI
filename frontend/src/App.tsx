@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import Checklist from "./Checklist";
 import {
   getClause,
   getHealth,
@@ -17,7 +18,7 @@ import type {
   Resolution,
 } from "./types";
 
-type View = "query" | "clauses" | "benchmark" | "llm-crosscheck";
+type View = "checklist" | "query" | "clauses" | "benchmark" | "llm-crosscheck";
 type TriState = "unknown" | "true" | "false";
 const INITIAL_REFERENCE_DATE = "2025-07-01";
 
@@ -134,7 +135,7 @@ function Metric({ label, value }: { label: string; value: string | number }) {
 }
 
 export default function App() {
-  const [view, setView] = useState<View>("query");
+  const [view, setView] = useState<View>("checklist");
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [obligations, setObligations] = useState<ObligationSummary[]>([]);
   const [query, setQuery] = useState("Does the RBI KYC customer notice obligation apply?");
@@ -270,16 +271,17 @@ export default function App() {
       <main id="top" className="main-content">
         <section className="hero">
           <div className="hero-copy">
-            <div className="eyebrow hero-eyebrow">TEMPORAL · APPLICABILITY · PROVENANCE</div>
-            <h1>Understand the rule.<br /><span>Prove why it applies.</span></h1>
+            <div className="eyebrow hero-eyebrow">RBI KYC · SEBI LODR · PLAIN ENGLISH</div>
+            <h1>Which rules apply to you?<br /><span>See why, with the source.</span></h1>
             <p>
-              Query RBI and SEBI obligations by reference date and entity profile.
-              TAARR keeps the decision deterministic and exposes the source evidence behind it.
+              Describe your organisation in your own words. TAARR checks every obligation in its
+              catalogue for the date you pick and tells you what applies, what does not, and what it
+              still needs to know — with the official clause behind each answer.
             </p>
           </div>
           <div className="hero-stats">
             <div><strong>{health?.catalog.obligations ?? "—"}</strong><span>Obligations loaded</span></div>
-            <div><strong>{health?.catalog.versions ?? "—"}</strong><span>Versions loaded</span></div>
+            <div><strong>43</strong><span>Plain questions</span></div>
             <div><strong>4</strong><span>Decision outcomes</span></div>
           </div>
         </section>
@@ -314,19 +316,26 @@ export default function App() {
         )}
 
         <nav className="view-tabs" aria-label="TAARR workspaces">
+          <button className={view === "checklist" ? "active" : ""} onClick={() => setView("checklist")}>
+            <span>01</span> Check my rules
+          </button>
           <button className={view === "query" ? "active" : ""} onClick={() => setView("query")}>
-            <span>01</span> Reasoning console
+            <span>02</span> Reasoning console
           </button>
           <button className={view === "clauses" ? "active" : ""} onClick={() => setView("clauses")}>
-            <span>02</span> Clause explorer
+            <span>03</span> Clause explorer
           </button>
           <button className={view === "benchmark" ? "active" : ""} onClick={() => setView("benchmark")}>
-            <span>03</span> Benchmark
+            <span>04</span> Benchmark
           </button>
           <button className={view === "llm-crosscheck" ? "active" : ""} onClick={() => setView("llm-crosscheck")}>
-            <span>04</span> AI cross-check
+            <span>05</span> AI cross-check
           </button>
         </nav>
+
+        {view === "checklist" && (
+          <Checklist geminiConfigured={Boolean(health?.gemini_api_key_configured)} />
+        )}
 
         {view === "query" && (
           <section className="workspace">

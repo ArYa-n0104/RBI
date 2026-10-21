@@ -1,5 +1,8 @@
 import type {
   BenchmarkResponse,
+  ChecklistResponse,
+  FactExtractionResponse,
+  FactListResponse,
   ClauseHistoryResponse,
   ExemptionsResponse,
   HealthResponse,
@@ -90,6 +93,31 @@ export function runLlmCrossCheck(input: {
   model?: string;
 }): Promise<LlmCrossCheckResponse> {
   return requestJson<LlmCrossCheckResponse>("/api/v1/baseline/llm-crosscheck", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function listFacts(): Promise<FactListResponse> {
+  return requestJson<FactListResponse>("/api/v1/facts");
+}
+
+export function extractFacts(input: {
+  description: string;
+  api_key?: string;
+}): Promise<FactExtractionResponse> {
+  return requestJson<FactExtractionResponse>("/api/v1/facts/extract", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function runChecklist(input: {
+  entity_profile: Record<string, unknown>;
+  reference_date: string;
+  regulator?: "RBI" | "SEBI" | null;
+}): Promise<ChecklistResponse> {
+  return requestJson<ChecklistResponse>("/api/v1/checklist", {
     method: "POST",
     body: JSON.stringify(input),
   });
