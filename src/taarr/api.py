@@ -24,6 +24,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .catalog import Catalog, load_catalog
+from .fact_extraction import DEFAULT_REGISTRY_PATH, extract_facts, load_fact_registry
 from .llm_baseline import DEFAULT_MODEL, classify_with_gemini
 from .models import (
     MissingFactsPolicy,
@@ -81,6 +82,16 @@ class LlmCrossCheckRequest(BaseModel):
     api_key: str | None = Field(default=None, min_length=1, max_length=400)
     model: str = Field(default=DEFAULT_MODEL, max_length=100)
     limit: int = Field(default=10, ge=1, le=127)
+
+
+class FactExtractionRequest(BaseModel):
+    """A plain-English description of the organisation, to be turned into form answers."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    description: str = Field(min_length=1, max_length=3_000)
+    api_key: str | None = Field(default=None, min_length=1, max_length=400)
+    model: str = Field(default=DEFAULT_MODEL, max_length=100)
 
 
 def policy_from_environment() -> ResolverPolicy | None:
@@ -208,6 +219,7 @@ def create_app(
     catalog_path: str | Path | None = None,
     benchmark_path: str | Path | None = None,
     resolver_policy: ResolverPolicy | None = None,
+    http_client: Any | None = None,
 ) -> FastAPI:
     """Application factory with injection points for reliable tests."""
     effective_catalog_path = catalog_path or os.getenv(
@@ -230,6 +242,10 @@ def create_app(
     app.state.catalog = loaded_catalog
     app.state.resolver_policy = selected_policy
     app.state.benchmark_path = Path(effective_benchmark_path)
+    app.state.fact_registry = load_fact_registry(
+        os.getenv("TAARR_FACT_REGISTRY_PATH", DEFAULT_REGISTRY_PATH)
+    )
+    app.state.http_client = http_client  # None -> a real httpx.Client per request
 
     origins = [
         origin.strip()
@@ -510,6 +526,50 @@ def create_app(
                 "The model never sees TAARR's own outcome. Agreement is a convenience signal only and "
                 "does not replace the project's required human two-person gold verification."
             ),
+        }
+
+    @app.get("/api/v1/facts", tags=["facts"])
+    def list_facts() -> dict[str, Any]:
+        """The closed list of facts TAARR obligations can test, with plain-English questions."""
+        registry = app.state.fact_registry
+        return {"groups": registry.groups, "facts": list(registry.facts.values())}
+
+    @app.post("/api/v1/facts/extract", tags=["facts"])
+    def extract_entity_facts(request: FactExtractionRequest) -> dict[str, Any]:
+        """Fill the fact form from a plain-English description using Gemini.
+
+        Gemini only sees the closed fact list and may only return keys from it;
+        every value is re-validated here and must be backed by a quote from the
+        user's own text. It never decides applicability -- the user reviews the
+        facts and the deterministic resolver does the rest.
+        """
+        api_key = request.api_key or os.getenv("GEMINI_API_KEY", "").strip()
+        if not api_key:
+            raise HTTPException(
+                status_code=422,
+                detail="No Gemini API key was supplied and GEMINI_API_KEY is not set in .env. "
+                "You can still answer the questions by hand.",
+            )
+        shared = app.state.http_client
+        if shared is not None:
+            result = extract_facts(
+                description=request.description, api_key=api_key,
+                registry=app.state.fact_registry, http_client=shared, model=request.model,
+            )
+        else:
+            with httpx.Client() as client:
+                result = extract_facts(
+                    description=request.description, api_key=api_key,
+                    registry=app.state.fact_registry, http_client=client, model=request.model,
+                )
+        if result.error:
+            raise HTTPException(status_code=502, detail=result.error)
+        return {
+            "facts": result.facts,
+            "evidence": result.evidence,
+            "rejected": result.rejected,
+            "unrecognised": result.unrecognised,
+            "notice": "Please review these answers. Anything not stated in your text was left blank, not guessed.",
         }
 
     return app

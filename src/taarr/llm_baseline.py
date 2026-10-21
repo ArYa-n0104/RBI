@@ -114,6 +114,28 @@ def parse_outcome(raw_text: str) -> str | None:
     return None
 
 
+def generate_text(
+    *,
+    api_key: str,
+    model: str,
+    payload: dict[str, Any],
+    http_client: HttpClient,
+    timeout: float = DEFAULT_TIMEOUT_SECONDS,
+) -> tuple[str | None, str | None]:
+    """POST one generateContent request. Returns (text, None) or (None, error message)."""
+    url = GEMINI_API_URL.format(model=model)
+    try:
+        response = http_client.post(url, json=payload, params={"key": api_key}, timeout=timeout)
+    except Exception as exc:  # noqa: BLE001 -- surface any transport error to the caller
+        return None, f"Request failed: {exc}"
+    if response.status_code != 200:
+        return None, f"Gemini API returned HTTP {response.status_code}: {response.text[:300]}"
+    try:
+        return response.json()["candidates"][0]["content"]["parts"][0]["text"], None
+    except (KeyError, IndexError, TypeError, ValueError) as exc:
+        return None, f"Unexpected Gemini response shape: {exc}"
+
+
 def classify_with_gemini(
     *,
     api_key: str,
@@ -139,29 +161,15 @@ def classify_with_gemini(
         reference_date=reference_date,
     )
 
-    url = GEMINI_API_URL.format(model=model)
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {"temperature": 0.0, "maxOutputTokens": 200},
     }
-
-    try:
-        response = http_client.post(url, json=payload, params={"key": api_key}, timeout=timeout)
-    except Exception as exc:  # noqa: BLE001 -- surface any transport error to the caller
-        return LlmClassification(outcome=None, raw_text="", error=f"Request failed: {exc}")
-
-    if response.status_code != 200:
-        return LlmClassification(
-            outcome=None,
-            raw_text="",
-            error=f"Gemini API returned HTTP {response.status_code}: {response.text[:300]}",
-        )
-
-    try:
-        body = response.json()
-        raw_text = body["candidates"][0]["content"]["parts"][0]["text"]
-    except (KeyError, IndexError, TypeError, ValueError) as exc:
-        return LlmClassification(outcome=None, raw_text="", error=f"Unexpected Gemini response shape: {exc}")
+    raw_text, error = generate_text(
+        api_key=api_key, model=model, payload=payload, http_client=http_client, timeout=timeout
+    )
+    if raw_text is None:
+        return LlmClassification(outcome=None, raw_text="", error=error)
 
     outcome = parse_outcome(raw_text)
     error = None if outcome is not None else "Could not parse a valid outcome label from the response"

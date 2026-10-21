@@ -1,0 +1,302 @@
+{
+ "_comment": "Closed list of facts the obligations can test. tests/test_fact_registry.py fails if an obligation uses a fact that is missing here.",
+ "groups": {
+  "organisation": "About your organisation",
+  "board_and_listing": "Listing and board (SEBI)",
+  "customer": "About a customer",
+  "customer_ownership": "Ownership of a customer entity",
+  "transaction": "About a transaction"
+ },
+ "facts": [
+  {
+   "key": "is_rbi_regulated_entity",
+   "group": "organisation",
+   "type": "boolean",
+   "question": "Is your organisation regulated by the RBI (for example a bank or an NBFC)?"
+  },
+  {
+   "key": "uses_vcip_onboarding",
+   "group": "organisation",
+   "type": "boolean",
+   "question": "Do you onboard customers through video-based identification (V-CIP)?"
+  },
+  {
+   "key": "is_non_face_to_face_onboarding",
+   "group": "organisation",
+   "type": "boolean",
+   "question": "Do you onboard customers without meeting them face to face (for example through an app)?"
+  },
+  {
+   "key": "uses_aadhaar_xml_or_qr",
+   "group": "organisation",
+   "type": "boolean",
+   "question": "Do you verify customers using Aadhaar XML or a secure QR code?"
+  },
+  {
+   "key": "relies_on_third_party_for_cdd",
+   "group": "organisation",
+   "type": "boolean",
+   "question": "Do you rely on a third party to carry out customer due diligence for you?"
+  },
+  {
+   "key": "is_listed_entity",
+   "group": "board_and_listing",
+   "type": "boolean",
+   "question": "Is your company listed on a stock exchange (SEBI-listed)?"
+  },
+  {
+   "key": "is_sme_exchange_listed",
+   "group": "board_and_listing",
+   "type": "boolean",
+   "question": "Is your company listed on an SME exchange or SME platform?"
+  },
+  {
+   "key": "is_top_2000_listed_entity",
+   "group": "board_and_listing",
+   "type": "boolean",
+   "question": "Is your company among the top 2000 listed companies by market capitalisation?"
+  },
+  {
+   "key": "entity_has_sr_equity_shares",
+   "group": "board_and_listing",
+   "type": "boolean",
+   "question": "Has your company issued equity shares with superior voting rights (SR shares)?"
+  },
+  {
+   "key": "chairperson_is_non_executive",
+   "group": "board_and_listing",
+   "type": "boolean",
+   "question": "Is the chairperson of your board a non-executive director?"
+  },
+  {
+   "key": "chairperson_is_promoter_or_related",
+   "group": "board_and_listing",
+   "type": "boolean",
+   "question": "Is the chairperson a promoter, or related to a promoter?"
+  },
+  {
+   "key": "paid_up_equity_capital_crore",
+   "group": "board_and_listing",
+   "type": "number",
+   "question": "What is your paid-up equity capital?",
+   "unit": "₹ crore",
+   "min": 0
+  },
+  {
+   "key": "net_worth_crore",
+   "group": "board_and_listing",
+   "type": "number",
+   "question": "What is your net worth?",
+   "unit": "₹ crore",
+   "min": 0
+  },
+  {
+   "key": "is_subject_to_rmc_requirement",
+   "group": "board_and_listing",
+   "type": "boolean",
+   "question": "Are you required to have a Risk Management Committee?"
+  },
+  {
+   "key": "is_non_executive_director",
+   "group": "board_and_listing",
+   "type": "boolean",
+   "question": "Is the director in question a non-executive director?"
+  },
+  {
+   "key": "director_age",
+   "group": "board_and_listing",
+   "type": "number",
+   "question": "How old is the director in question?",
+   "unit": "years",
+   "min": 0,
+   "max": 120
+  },
+  {
+   "key": "is_individual_customer",
+   "group": "customer",
+   "type": "boolean",
+   "question": "Is the customer an individual person?"
+  },
+  {
+   "key": "is_company_customer",
+   "group": "customer",
+   "type": "boolean",
+   "question": "Is the customer a company?"
+  },
+  {
+   "key": "is_trust_customer",
+   "group": "customer",
+   "type": "boolean",
+   "question": "Is the customer a trust?"
+  },
+  {
+   "key": "is_unincorporated_body_customer",
+   "group": "customer",
+   "type": "boolean",
+   "question": "Is the customer an unincorporated association or body of individuals?"
+  },
+  {
+   "key": "is_foreign_student_account",
+   "group": "customer",
+   "type": "boolean",
+   "question": "Is this an account for a foreign student?"
+  },
+  {
+   "key": "student_nationality",
+   "group": "customer",
+   "type": "enum",
+   "question": "What is the foreign student's nationality?",
+   "values": [
+    "Pakistani",
+    "Other"
+   ]
+  },
+  {
+   "key": "is_small_account",
+   "group": "customer",
+   "type": "boolean",
+   "question": "Is this a 'small account' as defined in the KYC Master Direction?"
+  },
+  {
+   "key": "is_shg_savings_account",
+   "group": "customer",
+   "type": "boolean",
+   "question": "Is this a savings account of a Self Help Group (SHG)?"
+  },
+  {
+   "key": "is_otp_based_ekyc_account",
+   "group": "customer",
+   "type": "boolean",
+   "question": "Was this account opened using OTP-based e-KYC?"
+  },
+  {
+   "key": "is_politically_exposed_person",
+   "group": "customer",
+   "type": "boolean",
+   "question": "Is the customer a politically exposed person?"
+  },
+  {
+   "key": "risk_category",
+   "group": "customer",
+   "type": "enum",
+   "question": "What risk category has the customer been given?",
+   "values": [
+    "low",
+    "medium",
+    "high"
+   ]
+  },
+  {
+   "key": "customer_unable_due_to_infirmity",
+   "group": "customer",
+   "type": "boolean",
+   "question": "Is the customer unable to complete the process because of illness or infirmity?"
+  },
+  {
+   "key": "has_changed_address",
+   "group": "customer",
+   "type": "boolean",
+   "question": "Has the customer changed their address?"
+  },
+  {
+   "key": "address_verification_pending",
+   "group": "customer",
+   "type": "boolean",
+   "question": "Is address verification still pending for the customer?"
+  },
+  {
+   "key": "has_failed_to_submit_pan_or_form60",
+   "group": "customer",
+   "type": "boolean",
+   "question": "Has the customer failed to submit a PAN or Form 60?"
+  },
+  {
+   "key": "is_unable_to_complete_cdd",
+   "group": "customer",
+   "type": "boolean",
+   "question": "Were you unable to complete customer due diligence for this customer?"
+  },
+  {
+   "key": "continuing_cdd_would_tip_off_customer",
+   "group": "customer",
+   "type": "boolean",
+   "question": "Would continuing due diligence tip the customer off about a suspicious transaction report?"
+  },
+  {
+   "key": "is_str_filed",
+   "group": "customer",
+   "type": "boolean",
+   "question": "Has a suspicious transaction report (STR) been filed on this customer?"
+  },
+  {
+   "key": "prompting_observed_during_vcip",
+   "group": "customer",
+   "type": "boolean",
+   "question": "Was the customer being prompted or coached during the video call?"
+  },
+  {
+   "key": "is_walk_in_customer",
+   "group": "customer",
+   "type": "boolean",
+   "question": "Is this a walk-in customer (not an account holder)?"
+  },
+  {
+   "key": "shareholder_equity_percentage",
+   "group": "customer_ownership",
+   "type": "number",
+   "question": "What percentage of equity does the shareholder hold?",
+   "unit": "%",
+   "min": 0,
+   "max": 100
+  },
+  {
+   "key": "shareholder_ownership_percentage",
+   "group": "customer_ownership",
+   "type": "number",
+   "question": "What percentage of the company does the shareholder own?",
+   "unit": "%",
+   "min": 0,
+   "max": 100
+  },
+  {
+   "key": "member_ownership_percentage",
+   "group": "customer_ownership",
+   "type": "number",
+   "question": "What percentage of the body does the member own?",
+   "unit": "%",
+   "min": 0,
+   "max": 100
+  },
+  {
+   "key": "beneficiary_interest_percentage",
+   "group": "customer_ownership",
+   "type": "number",
+   "question": "What percentage of the trust's interest does the beneficiary hold?",
+   "unit": "%",
+   "min": 0,
+   "max": 100
+  },
+  {
+   "key": "transaction_amount_rupees",
+   "group": "transaction",
+   "type": "number",
+   "question": "What is the transaction amount?",
+   "unit": "₹",
+   "min": 0
+  },
+  {
+   "key": "is_international_transfer_for_non_accountholder",
+   "group": "transaction",
+   "type": "boolean",
+   "question": "Is this an international money transfer for someone who is not an account holder?"
+  },
+  {
+   "key": "aadhaar_document_age_working_days",
+   "group": "transaction",
+   "type": "number",
+   "question": "How many working days old is the Aadhaar document?",
+   "unit": "working days",
+   "min": 0
+  }
+ ]
+}
