@@ -59,7 +59,7 @@ def test_query_returns_deterministic_outcome_and_provenance(client):
     result = payload["outcomes"][0]
     assert result["outcome"] == "Applicable"
     assert result["version_id"] == "RBI-KYC-P38E-v1"
-    assert result["evidence"][0]["verification_status"] == "source_located_clause_not_gold_verified"
+    assert result["evidence"][0]["verification_status"] == "source_text_human_confirmed"
     assert payload["policy"]["no_version"] == "DROP"
 
 
@@ -109,7 +109,7 @@ def test_clause_explorer_shows_version_and_verification_status(client):
     assert response.status_code == 200
     payload = response.json()
     assert payload["version_count"] == 1
-    assert payload["versions"][0]["verification_status"] == "source_located_clause_not_gold_verified"
+    assert payload["versions"][0]["verification_status"] == "source_text_human_confirmed"
 
 
 def test_clause_not_found_is_404(client):
