@@ -37,3 +37,4 @@ Thumbs.db
 # Generated local experiment outputs
 reports/experiments/
 reports/provenance_audit/
+reports/illustrative/

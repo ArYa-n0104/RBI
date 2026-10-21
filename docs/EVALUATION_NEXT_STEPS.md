@@ -1,3 +1,5 @@
 # Evaluation next steps
 
-TAARR must not report accuracy until the benchmark has gold_verified items. Draft labels are hypotheses only. The next increment should add a benchmark audit command, a gold-only four-class scoring command, and tests for empty gold data, missing predictions, duplicate IDs, class metrics, and split-group leakage.
+TAARR must not report accuracy until the benchmark has gold_verified items. Draft labels are hypotheses only. The gold-only audit command, four-class scoring, and tests for empty gold data, missing predictions, duplicate IDs, class metrics, and split-group leakage are done (`src/taarr/evaluate.py`, `src/taarr/experiments.py`, `tests/test_evaluate.py`, `tests/test_experiments.py`).
+
+**2026-10-21:** added `scripts/illustrative_eval.py` as a deliberately separate, loudly-labeled sanity check of the resolver's ablations against the draft benchmark (see `docs/ILLUSTRATIVE_EVAL.md`). This is Phase 5's "baselines/ablations" machinery exercised end to end on today's data; it is not, and must never be reported as, the real evaluation. The real next step is unchanged: a second independent annotator for the 127 draft items (see `docs/PENDING_TWO_PERSON_VERIFICATION.txt`), after which `benchmark.jsonl` gets real gold rows and `src/taarr/experiments.py` can be run for real.
