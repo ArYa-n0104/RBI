@@ -20,6 +20,7 @@ over HTTPS.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from datetime import date
 from typing import Any, Protocol
@@ -31,6 +32,16 @@ GEMINI_API_URL = (
     "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 )
 DEFAULT_MODEL = "gemini-2.5-flash-lite"
+
+
+def default_model() -> str:
+    """The Gemini model to use, from GEMINI_MODEL in .env, read at call time.
+
+    Keeping this a function (not a constant) means a model swap only needs an
+    edit to .env and a server restart -- useful when one model hits its free-tier
+    rate limit and you want to move to another.
+    """
+    return os.getenv("GEMINI_MODEL", "").strip() or DEFAULT_MODEL
 DEFAULT_TIMEOUT_SECONDS = 30.0
 
 _OUTCOME_LABELS = [outcome.value for outcome in Outcome]

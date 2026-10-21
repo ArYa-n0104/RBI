@@ -25,7 +25,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .catalog import Catalog, load_catalog
 from .fact_extraction import DEFAULT_REGISTRY_PATH, extract_facts, load_fact_registry
-from .llm_baseline import DEFAULT_MODEL, classify_with_gemini
+from .llm_baseline import classify_with_gemini, default_model
 from .models import (
     MissingFactsPolicy,
     NoVersionPolicy,
@@ -87,7 +87,7 @@ class LlmCrossCheckRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     api_key: str | None = Field(default=None, min_length=1, max_length=400)
-    model: str = Field(default=DEFAULT_MODEL, max_length=100)
+    model: str = Field(default_factory=default_model, max_length=100)
     limit: int = Field(default=10, ge=1, le=127)
 
 
@@ -108,7 +108,7 @@ class FactExtractionRequest(BaseModel):
 
     description: str = Field(min_length=1, max_length=3_000)
     api_key: str | None = Field(default=None, min_length=1, max_length=400)
-    model: str = Field(default=DEFAULT_MODEL, max_length=100)
+    model: str = Field(default_factory=default_model, max_length=100)
 
 
 def policy_from_environment() -> ResolverPolicy | None:
@@ -286,6 +286,7 @@ def create_app(
             "policy_configured": app.state.resolver_policy is not None,
             "policy_required": app.state.resolver_policy is None,
             "gemini_api_key_configured": bool(os.getenv("GEMINI_API_KEY", "").strip()),
+            "gemini_model": default_model(),
             "catalog": {
                 "obligations": app.state.catalog.obligation_count,
                 "versions": app.state.catalog.version_count,

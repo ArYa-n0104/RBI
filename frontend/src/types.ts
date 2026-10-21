@@ -6,6 +6,7 @@ export interface HealthResponse {
   policy_configured: boolean;
   policy_required: boolean;
   gemini_api_key_configured: boolean;
+  gemini_model?: string;
   catalog: {
     obligations: number;
     versions: number;

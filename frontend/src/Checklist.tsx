@@ -261,7 +261,13 @@ function ResultRow({
   );
 }
 
-export default function Checklist({ geminiConfigured }: { geminiConfigured: boolean }) {
+export default function Checklist({
+  geminiConfigured,
+  modelName,
+}: {
+  geminiConfigured: boolean;
+  modelName?: string;
+}) {
   const [facts, setFacts] = useState<FactDefinition[]>([]);
   const [groupLabels, setGroupLabels] = useState<Record<string, string>>({});
   const [loadError, setLoadError] = useState("");
@@ -397,7 +403,7 @@ export default function Checklist({ geminiConfigured }: { geminiConfigured: bool
       }));
       setStep(2);
     } catch (error) {
-      setExtractError(error instanceof Error ? error.message : "The AI fill could not be completed.");
+      setExtractError(error instanceof Error ? error.message : "Autofill could not be completed.");
     } finally {
       setExtracting(false);
     }
@@ -558,7 +564,7 @@ export default function Checklist({ geminiConfigured }: { geminiConfigured: bool
           {!geminiConfigured && (
             <div className="cl-key-block">
               <button type="button" className="cl-link-button" onClick={() => setShowKeyField((v) => !v)}>
-                {showKeyField ? "Hide the AI key box" : "Have a Gemini API key? Use it to fill the answers"}
+                {showKeyField ? "Hide the key box" : "Have a Gemini API key? Use it to autofill"}
               </button>
               {showKeyField && (
                 <input
@@ -575,7 +581,7 @@ export default function Checklist({ geminiConfigured }: { geminiConfigured: bool
 
           {extractError && (
             <div className="notice error-notice" role="alert">
-              <strong>AI fill did not work</strong>
+              <strong>Autofill did not work</strong>
               <p>{extractError}</p>
               <p>You can still answer the questions yourself — the result is exactly the same.</p>
             </div>
@@ -589,7 +595,7 @@ export default function Checklist({ geminiConfigured }: { geminiConfigured: bool
               onClick={() => void handleExtract()}
             >
               {extracting ? <span className="spinner" /> : null}
-              {extracting ? "Reading your description…" : "Fill the answers with AI"}
+              {extracting ? "Reading your description…" : "Autofill the answers"}
               <span>→</span>
             </button>
             <button type="button" className="cl-secondary-button" onClick={() => setStep(2)}>
@@ -597,8 +603,9 @@ export default function Checklist({ geminiConfigured }: { geminiConfigured: bool
             </button>
           </div>
           <p className="form-footnote">
-            The AI only fills in the form from your own words and must quote you for each answer.
-            It never decides whether a rule applies — the rule engine does that.
+            Autofill only fills in this form from your own words, and must quote you for every
+            answer it gives. It never decides whether a rule applies — the rule engine does that.
+            {modelName ? <> Model: <code>{modelName}</code>.</> : null}
           </p>
         </div>
       )}

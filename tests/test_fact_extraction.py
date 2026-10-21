@@ -77,9 +77,11 @@ class _Client:
     def __init__(self, text):
         self.text = text
         self.payload = None
+        self.url = ""
 
     def post(self, url, *, json, params, timeout):
         self.payload = json
+        self.url = url
         return _Resp(self.text)
 
 
@@ -147,3 +149,17 @@ def test_checklist_regulator_filter_and_answers_reduce_unknowns(monkeypatch):
     }).json()
     assert answered["counts"]["applies"] > 0
     assert answered["counts"]["need_more_info"] < 60
+
+
+def test_gemini_model_comes_from_the_environment(monkeypatch):
+    """A model swap is an .env edit: no code change, no redeploy of the frontend."""
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-2.0-flash")
+    client = _Client(json.dumps({"facts": []}))
+    c = TestClient(create_app(http_client=client))
+    assert c.get("/api/v1/health").json()["gemini_model"] == "gemini-2.0-flash"
+    c.post("/api/v1/facts/extract", json={"description": DESC, "api_key": "k"})
+    assert "gemini-2.0-flash" in client.url
+
+    monkeypatch.delenv("GEMINI_MODEL")
+    c2 = TestClient(create_app(http_client=_Client(json.dumps({"facts": []}))))
+    assert c2.get("/api/v1/health").json()["gemini_model"] == "gemini-2.5-flash-lite"

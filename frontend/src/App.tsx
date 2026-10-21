@@ -334,7 +334,10 @@ export default function App() {
         </nav>
 
         {view === "checklist" && (
-          <Checklist geminiConfigured={Boolean(health?.gemini_api_key_configured)} />
+          <Checklist
+            geminiConfigured={Boolean(health?.gemini_api_key_configured)}
+            modelName={health?.gemini_model}
+          />
         )}
 
         {view === "query" && (

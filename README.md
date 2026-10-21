@@ -131,11 +131,18 @@ The UI opens on **Check my rules**, the guided flow for someone who does not kno
 
 ### Check my rules (guided flow)
 
-1. **Describe** your organisation in plain English, pick the date to check against, and choose RBI, SEBI or both. Optionally press *Fill the answers with AI*: Gemini is shown only the closed list of the 43 facts the catalogue can test, may return nothing else, and must quote your own words for every answer; the server re-checks every value and drops anything unsupported. Gemini never decides applicability.
+1. **Describe** your organisation in plain English, pick the date to check against, and choose RBI, SEBI or both. Optionally press *Autofill the answers*: Gemini is shown only the closed list of the 43 facts the catalogue can test, may return nothing else, and must quote your own words for every answer; the server re-checks every value and drops anything unsupported. Gemini never decides applicability.
 2. **Check answers** — every fact is a plain-English question with Yes / No / Not sure, a choice list, or a number box. Nothing is assumed: an unanswered question stays unknown.
 3. **Your checklist** — all obligations resolved by the deterministic engine and grouped into *Applies to you*, *Need one more answer*, *Does not apply* and *Conflicting*, with the exact question that would settle each unknown, a ranked "answer these to settle more rules" panel that re-runs as you answer, the official source link for every row, and a plain-text download.
 
 Endpoints behind it: `GET /api/v1/facts`, `POST /api/v1/facts/extract`, `POST /api/v1/checklist`.
+
+### Choosing the Gemini model
+
+Both the autofill and the cross-check call the model named by `GEMINI_MODEL` in `.env`
+(default `gemini-2.5-flash-lite`). If that model hits its free-tier rate limit, change the
+line to another model such as `gemini-2.5-flash` or `gemini-2.0-flash` and restart the
+backend — no code change is needed. `GET /api/v1/health` reports the model in use.
 
 ### AI cross-check (optional B6 baseline)
 

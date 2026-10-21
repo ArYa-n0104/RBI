@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from .llm_baseline import DEFAULT_MODEL, DEFAULT_TIMEOUT_SECONDS, HttpClient, generate_text
+from .llm_baseline import DEFAULT_TIMEOUT_SECONDS, HttpClient, default_model, generate_text
 
 DEFAULT_REGISTRY_PATH = "data/facts/fact_registry.json"
 MAX_DESCRIPTION_CHARS = 3_000
@@ -186,7 +186,7 @@ def extract_facts(
     api_key: str,
     registry: FactRegistry,
     http_client: HttpClient,
-    model: str = DEFAULT_MODEL,
+    model: str | None = None,
     timeout: float = DEFAULT_TIMEOUT_SECONDS,
 ) -> ExtractionResult:
     description = description.strip()
@@ -205,7 +205,8 @@ def extract_facts(
         },
     }
     raw_text, error = generate_text(
-        api_key=api_key, model=model, payload=payload, http_client=http_client, timeout=timeout
+        api_key=api_key, model=model or default_model(), payload=payload,
+        http_client=http_client, timeout=timeout,
     )
     if raw_text is None:
         return ExtractionResult(error=error)
