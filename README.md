@@ -101,7 +101,7 @@ Copy `.env.example` to `.env`. The example contains the adopted D-001 no-version
 - `TAARR_MISSING_FACTS_POLICY=KLEENE`
 - `TAARR_UNKNOWN_PRECEDENCE_POLICY=DEFINITIVE_RULES_FIRST`
 
-D-001 is finalized: `NOT_APPLICABLE` means TAARR emits a `Not applicable` result with temporal-filter evidence when no version is in force on the reference date. The missing-facts and unknown-precedence settings remain explicit choices, and D-003 is still open. Review [Decision log](docs/DECISIONS.md) before labeling affected edge cases or creating gold benchmark labels. For an existing checkout, `git pull` does not overwrite your local `.env`; verify that the three values above are present in it.
+D-001, D-002 and D-003 are finalized: `NOT_APPLICABLE` means TAARR emits a `Not applicable` result with temporal-filter evidence when no version is in force on the reference date; `KLEENE` means a missing fact is `UNKNOWN`, not a silent failure, and can still be overridden by a known-false sibling condition; `DEFINITIVE_RULES_FIRST` means an unknown applicability result is not final until exemptions and dependencies have had a chance to settle it. Review [Decision log](docs/DECISIONS.md) before labeling edge cases or creating gold benchmark labels. For an existing checkout, `git pull` does not overwrite your local `.env`; verify that the three values above are present in it.
 
 Then start the API:
 
