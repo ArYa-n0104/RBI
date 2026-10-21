@@ -38,3 +38,8 @@ Thumbs.db
 reports/experiments/
 reports/provenance_audit/
 reports/illustrative/
+
+# Node / frontend build artifacts
+node_modules/
+frontend/dist/
+*.tsbuildinfo

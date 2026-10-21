@@ -3,6 +3,7 @@ import type {
   ClauseHistoryResponse,
   ExemptionsResponse,
   HealthResponse,
+  LlmCrossCheckResponse,
   ObligationListResponse,
   QueryResponse,
 } from "./types";
@@ -80,5 +81,16 @@ export function runBenchmark(): Promise<BenchmarkResponse> {
   return requestJson<BenchmarkResponse>("/api/v1/benchmark/run", {
     method: "POST",
     body: JSON.stringify({ system_config: "TAARR" }),
+  });
+}
+
+export function runLlmCrossCheck(input: {
+  api_key: string;
+  limit: number;
+  model?: string;
+}): Promise<LlmCrossCheckResponse> {
+  return requestJson<LlmCrossCheckResponse>("/api/v1/baseline/llm-crosscheck", {
+    method: "POST",
+    body: JSON.stringify(input),
   });
 }

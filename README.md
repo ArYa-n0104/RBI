@@ -127,7 +127,11 @@ npm run dev
 
 Open http://localhost:5173. Vite proxies `/api` and `/health` to the backend on port 8000. Use Node.js 22 for the frontend toolchain.
 
-The UI provides the reasoning console, entity-profile inputs, date selection, clause/version explorer, source provenance, and gold-only benchmark dashboard. All 60 obligations are `source_text_human_confirmed` and the benchmark dashboard shows real evaluation results (n=127, accuracy=1.0, macro F1=0.75).
+The UI provides the reasoning console, entity-profile inputs, date selection, clause/version explorer, source provenance, gold-only benchmark dashboard, and an AI cross-check tab. All 60 obligations are `source_text_human_confirmed` and the benchmark dashboard shows real evaluation results (n=127, accuracy=1.0, macro F1=0.75).
+
+### AI cross-check (optional B6 baseline)
+
+The fourth tab lets you paste your own Gemini API key and ask an independent LLM to read the same clause text and entity facts as TAARR — without ever seeing TAARR's own answer — then compares its outcome against the gold label. The key is sent only to your local backend for that one request, forwarded to Google, and never written to disk or logged. This is a fast, convenient sanity check; it is **not** a substitute for the project's required two-person human verification (`docs/ANNOTATION_PROTOCOL.md`). See `docs/RESEARCH_EVALUATION.md` for the B6 baseline definition.
 
 ### Run checks
 

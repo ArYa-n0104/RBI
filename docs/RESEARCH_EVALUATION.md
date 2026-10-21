@@ -29,7 +29,7 @@ Evaluate all systems on the same frozen test set:
 - **B3 no three-valued abstention:** force missing facts into a documented baseline behavior; never production policy.
 - **B4 no exemptions/dependencies:** remove relation traversal.
 - **B5 full TAARR:** temporal filtering, three-valued conditions, exceptions/dependencies and evidence trace.
-- **Optional B6 RAG/LLM:** only after implementation; freeze and disclose model, prompts and settings.
+- **B6 LLM cross-check (implemented 2026-10-21):** `POST /api/v1/baseline/llm-crosscheck` (`src/taarr/llm_baseline.py`) asks Gemini to read the same clause text, entity facts and reference date independently, without ever seeing TAARR's own outcome, and reports agreement with the gold label. Model and temperature (0.0) are fixed in `llm_baseline.DEFAULT_MODEL`; the caller supplies their own API key per request and it is never persisted. This is a convenience signal, not a replacement for the two-person human verification required for gold status — state this caveat wherever B6 results are reported.
 
 Avoid claiming superiority over systems not actually run. Report oracle-retrieval separately from end-to-end retrieval when feasible.
 

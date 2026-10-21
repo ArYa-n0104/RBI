@@ -101,3 +101,21 @@ export interface ExemptionsResponse {
   count: number;
   exemptions: Array<Record<string, unknown>>;
 }
+
+export interface LlmCrossCheckItem {
+  benchmark_item_id: string;
+  target_obligation_id: string;
+  gold_outcome: Outcome;
+  llm_outcome: Outcome | null;
+  agrees_with_gold: boolean;
+  llm_raw_text: string;
+  error: string | null;
+}
+
+export interface LlmCrossCheckResponse {
+  model: string;
+  n: number;
+  agreement_with_gold: BenchmarkMetric;
+  items: LlmCrossCheckItem[];
+  notice: string;
+}

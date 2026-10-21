@@ -4,18 +4,20 @@ import {
   getHealth,
   listObligations,
   runBenchmark,
+  runLlmCrossCheck,
   runQuery,
 } from "./api";
 import type {
   BenchmarkResponse,
   ClauseHistoryResponse,
   HealthResponse,
+  LlmCrossCheckResponse,
   ObligationSummary,
   QueryResponse,
   Resolution,
 } from "./types";
 
-type View = "query" | "clauses" | "benchmark";
+type View = "query" | "clauses" | "benchmark" | "llm-crosscheck";
 type TriState = "unknown" | "true" | "false";
 const INITIAL_REFERENCE_DATE = "2025-07-01";
 
@@ -149,6 +151,11 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [pageError, setPageError] = useState("");
   const [catalogError, setCatalogError] = useState("");
+  const [geminiApiKey, setGeminiApiKey] = useState("");
+  const [crossCheckLimit, setCrossCheckLimit] = useState("10");
+  const [crossCheckLoading, setCrossCheckLoading] = useState(false);
+  const [crossCheckError, setCrossCheckError] = useState("");
+  const [crossCheck, setCrossCheck] = useState<LlmCrossCheckResponse | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -225,6 +232,20 @@ export default function App() {
     }
   }
 
+  async function handleCrossCheck(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setCrossCheckLoading(true);
+    setCrossCheckError("");
+    try {
+      const limit = Math.max(1, Math.min(127, Number(crossCheckLimit) || 10));
+      setCrossCheck(await runLlmCrossCheck({ api_key: geminiApiKey.trim(), limit }));
+    } catch (error) {
+      setCrossCheckError(error instanceof Error ? error.message : "Cross-check run failed.");
+    } finally {
+      setCrossCheckLoading(false);
+    }
+  }
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -298,6 +319,9 @@ export default function App() {
           </button>
           <button className={view === "benchmark" ? "active" : ""} onClick={() => setView("benchmark")}>
             <span>03</span> Benchmark
+          </button>
+          <button className={view === "llm-crosscheck" ? "active" : ""} onClick={() => setView("llm-crosscheck")}>
+            <span>04</span> AI cross-check
           </button>
         </nav>
 
@@ -556,6 +580,155 @@ export default function App() {
                 )}
               </>
             )}
+          </section>
+        )}
+
+        {view === "llm-crosscheck" && (
+          <section className="workspace">
+            <div className="workspace-heading">
+              <div>
+                <div className="eyebrow">INDEPENDENT BASELINE &middot; B6</div>
+                <h2>AI cross-check</h2>
+                <p>
+                  Ask Gemini to read the same clause text and entity facts on its own, without ever
+                  seeing TAARR&apos;s answer, then compare its outcome against the gold label.
+                </p>
+              </div>
+            </div>
+
+            <div className="notice policy-notice">
+              <strong>What this does and does not prove</strong>
+              <p>
+                TAARR&apos;s own outcome always comes from the deterministic resolver — this screen
+                never changes it. Gemini is given only the clause text, the entity facts and the
+                date, and answers independently. Agreement with the gold label is a useful, fast
+                signal, but it is <em>not</em> a substitute for the project&apos;s required human
+                two-person verification (see <code>docs/ANNOTATION_PROTOCOL.md</code>). An LLM can
+                misread a clause or be inconsistent across runs.
+              </p>
+            </div>
+
+            <div className="query-layout">
+              <form className="query-form" onSubmit={handleCrossCheck}>
+                <label className="field-label" htmlFor="gemini-key">Gemini API key</label>
+                <input
+                  id="gemini-key"
+                  type="password"
+                  autoComplete="off"
+                  value={geminiApiKey}
+                  onChange={(event) => setGeminiApiKey(event.target.value)}
+                  placeholder="Paste your own Gemini API key"
+                  required
+                />
+                <p className="form-footnote">
+                  Sent only to the local TAARR backend for this one request, then forwarded
+                  directly to Google. Never written to disk, logged, or stored by this app. Get a
+                  key at{" "}
+                  <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">
+                    aistudio.google.com/app/apikey
+                  </a>
+                  .
+                </p>
+                <label className="field-label" htmlFor="crosscheck-limit">
+                  How many gold items to check (1–127)
+                </label>
+                <input
+                  id="crosscheck-limit"
+                  type="number"
+                  min={1}
+                  max={127}
+                  value={crossCheckLimit}
+                  onChange={(event) => setCrossCheckLimit(event.target.value)}
+                />
+                <button
+                  className="primary-button"
+                  type="submit"
+                  disabled={crossCheckLoading || !geminiApiKey.trim()}
+                >
+                  {crossCheckLoading ? (
+                    <><span className="spinner" /> Asking Gemini…</>
+                  ) : (
+                    <>Run cross-check <span>→</span></>
+                  )}
+                </button>
+              </form>
+
+              <div className="results-panel">
+                <div className="results-topline">
+                  <div>
+                    <div className="eyebrow">AGREEMENT WITH GOLD</div>
+                    <h3>{crossCheck ? `${crossCheck.n} item(s) checked` : "Results appear here"}</h3>
+                  </div>
+                  {crossCheck && <span className="date-chip">Model: {crossCheck.model}</span>}
+                </div>
+
+                {crossCheckError && (
+                  <div className="notice error-notice" role="alert">
+                    <strong>Cross-check could not be completed</strong>
+                    <p>{crossCheckError}</p>
+                  </div>
+                )}
+
+                {!crossCheck && !crossCheckError && (
+                  <div className="empty-state">
+                    <div className="empty-icon">⇄</div>
+                    <h3>Two independent readers, one clause</h3>
+                    <p>
+                      Paste a Gemini API key and run the check to see how often an independent
+                      language model agrees with TAARR&apos;s gold-verified answers.
+                    </p>
+                  </div>
+                )}
+
+                {crossCheck && (
+                  <>
+                    <div className="metric-grid">
+                      <Metric
+                        label="Agreement rate"
+                        value={
+                          crossCheck.agreement_with_gold.accuracy === null
+                            ? "—"
+                            : `${(crossCheck.agreement_with_gold.accuracy * 100).toFixed(1)}%`
+                        }
+                      />
+                      <Metric
+                        label="Macro F1"
+                        value={
+                          crossCheck.agreement_with_gold.macro_f1 === null
+                            ? "—"
+                            : crossCheck.agreement_with_gold.macro_f1.toFixed(3)
+                        }
+                      />
+                      <Metric label="Items checked" value={crossCheck.n} />
+                      <Metric
+                        label="Unparseable responses"
+                        value={crossCheck.agreement_with_gold.dropped_predictions}
+                      />
+                    </div>
+                    <div className="notice info-notice">{crossCheck.notice}</div>
+                    <div className="benchmark-table-wrap">
+                      <table className="benchmark-table">
+                        <thead>
+                          <tr><th>Item</th><th>Gold</th><th>Gemini</th><th>Agrees</th></tr>
+                        </thead>
+                        <tbody>
+                          {crossCheck.items.map((item) => (
+                            <tr key={item.benchmark_item_id}>
+                              <td>{item.benchmark_item_id}</td>
+                              <td>{item.gold_outcome}</td>
+                              <td title={item.error ?? item.llm_raw_text}>
+                                {item.llm_outcome ?? (item.error ? "Error" : "Unparsed")}
+                              </td>
+                              <td>{item.agrees_with_gold ? "Yes" : "No"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
           </section>
         )}
 

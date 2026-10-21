@@ -17,12 +17,14 @@ from datetime import date
 from pathlib import Path
 from typing import Any, Literal
 
+import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .catalog import Catalog, load_catalog
+from .llm_baseline import DEFAULT_MODEL, classify_with_gemini
 from .models import (
     MissingFactsPolicy,
     NoVersionPolicy,
@@ -62,6 +64,20 @@ class BenchmarkRunRequest(BaseModel):
 
     system_config: Literal["TAARR"] = "TAARR"
     limit: int | None = Field(default=None, ge=1, le=5_000)
+
+
+class LlmCrossCheckRequest(BaseModel):
+    """An independent LLM read of the same gold benchmark items.
+
+    The api_key is forwarded to Google's Gemini API for this request only.
+    It is never written to disk, logged, or stored in app state.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    api_key: str = Field(min_length=1, max_length=400)
+    model: str = Field(default=DEFAULT_MODEL, max_length=100)
+    limit: int = Field(default=10, ge=1, le=127)
 
 
 def policy_from_environment() -> ResolverPolicy | None:
@@ -416,6 +432,69 @@ def create_app(
                 "No gold-verified benchmark items are available. Draft annotation candidates are "
                 "intentionally excluded and are never scored."
                 if not rows else "Scored gold-verified benchmark items only."
+            ),
+        }
+
+    @app.post("/api/v1/baseline/llm-crosscheck", tags=["baseline"])
+    def run_llm_crosscheck(request: LlmCrossCheckRequest) -> dict[str, Any]:
+        """Ask Gemini to independently classify a sample of gold items.
+
+        This is the optional B6 baseline named in docs/RESEARCH_EVALUATION.md.
+        Gemini never sees TAARR's own outcome -- only the clause text, the
+        entity facts, and the reference date -- so agreement with the gold
+        label is a weak independent signal, not proof that TAARR is correct.
+        It does not replace the project's required human two-person
+        verification. The supplied api_key is used for this request only and
+        is never persisted.
+        """
+        try:
+            items = _load_gold_items(app.state.benchmark_path)
+        except (OSError, ValueError) as exc:
+            raise HTTPException(status_code=500, detail=f"Could not load benchmark: {exc}") from exc
+        items = items[: request.limit]
+        if not items:
+            raise HTTPException(status_code=404, detail="No gold-verified benchmark items are available.")
+
+        rows: list[dict[str, Any]] = []
+        gold_labels: list[str] = []
+        llm_labels: list[str | None] = []
+        with httpx.Client() as client:
+            for item in items:
+                try:
+                    reference_date = date.fromisoformat(item["reference_date"])
+                except (KeyError, TypeError, ValueError):
+                    continue
+                classification = classify_with_gemini(
+                    api_key=request.api_key,
+                    obligation_id=item["target_obligation_id"],
+                    catalog=app.state.catalog,
+                    entity_profile=item.get("entity_profile", {}),
+                    reference_date=reference_date,
+                    model=request.model,
+                    http_client=client,
+                )
+                gold = item["gold_outcome"]
+                gold_labels.append(gold)
+                llm_labels.append(classification.outcome)
+                rows.append({
+                    "benchmark_item_id": item["benchmark_item_id"],
+                    "target_obligation_id": item["target_obligation_id"],
+                    "gold_outcome": gold,
+                    "llm_outcome": classification.outcome,
+                    "agrees_with_gold": classification.outcome == gold,
+                    "llm_raw_text": classification.raw_text,
+                    "error": classification.error,
+                })
+
+        return {
+            "model": request.model,
+            "n": len(rows),
+            "agreement_with_gold": _classification_metrics(gold_labels, llm_labels),
+            "items": rows,
+            "notice": (
+                "This is an independent LLM cross-check, not a verification of TAARR's correctness. "
+                "The model never sees TAARR's own outcome. Agreement is a convenience signal only and "
+                "does not replace the project's required human two-person gold verification."
             ),
         }
 

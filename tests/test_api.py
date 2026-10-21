@@ -171,6 +171,36 @@ def test_benchmark_run_excludes_non_gold_rows(tmp_path, client):
     assert payload["items"] == []
 
 
+def test_llm_crosscheck_rejects_blank_api_key(client):
+    response = client.post("/api/v1/baseline/llm-crosscheck", json={"api_key": "", "limit": 1})
+    assert response.status_code == 422
+
+
+def test_llm_crosscheck_uses_gemini_and_never_leaks_key(client, monkeypatch):
+    from taarr import api as api_module
+
+    captured = {}
+
+    def fake_classify_with_gemini(*, api_key, obligation_id, catalog, entity_profile, reference_date, model, http_client):
+        captured["api_key"] = api_key
+        from taarr.llm_baseline import LlmClassification
+        return LlmClassification(outcome="Applicable", raw_text="LABEL: Applicable\nREASON: stub")
+
+    monkeypatch.setattr(api_module, "classify_with_gemini", fake_classify_with_gemini)
+
+    response = client.post(
+        "/api/v1/baseline/llm-crosscheck",
+        json={"api_key": "secret-test-key", "limit": 2},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert captured["api_key"] == "secret-test-key"
+    assert payload["n"] == 2
+    assert "secret-test-key" not in json.dumps(payload)
+    assert "agreement_with_gold" in payload
+    assert all("llm_outcome" in row for row in payload["items"])
+
+
 def test_query_fails_closed_if_policy_is_unconfigured(monkeypatch):
     # The developer's local .env may configure the resolver; this test must
     # explicitly simulate a deployment where policy values are absent.
