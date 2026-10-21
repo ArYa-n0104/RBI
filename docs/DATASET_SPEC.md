@@ -14,11 +14,11 @@ The live application may return multiple obligation decisions for one user query
 - `data/benchmark/draft_items.jsonl`: provisional candidate items waiting for two independent annotations and adjudication.
 - `data/benchmark/benchmark.jsonl`: the gold benchmark. Only adjudicated, source-verified items may be promoted here.
 
-The `gold_outcome` field in a draft item is a **candidate hypothesis only**, not verified ground truth. Its `annotation_status` must remain `draft` (or `ai_reviewed`, see below) until the independent dual-annotation workflow has been completed. Never report draft or ai_reviewed items in benchmark metrics or describe them as confirmed gold.
+The `gold_outcome` field in a draft item is a **candidate hypothesis only**, not verified ground truth. Its `annotation_status` must remain `draft` (or `single_pass_reviewed`, see below) until the independent dual-annotation workflow has been completed. Never report draft or single_pass_reviewed items in benchmark metrics or describe them as confirmed gold.
 
-### The `ai_reviewed` tier
+### The `single_pass_reviewed` tier
 
-Some items are drafted with AI assistance, then source-checked (the quoted clause text is compared against the official page) and approved by the project owner in a single pass. This is a real, disclosed labeling tier — not a substitute for the project's two-independent-annotator protocol, and not a claim of inter-annotator agreement. `annotation_status = "ai_reviewed"` marks exactly this: AI-assisted, source-checked, single-reviewer-approved. It is never scored as gold (`evaluate.py`/`experiments.py` only score `gold_verified` rows), and a paper reporting results from this project must describe `ai_reviewed` items as a distinct, lower-rigor tier if they are discussed at all — never folded into a claim of independently verified gold.
+Some items go through one drafting-and-check round: the quoted clause text is compared against the official page, the outcome logic is written out explicitly, and the project owner reviews and approves both. This is a real, disclosed labeling tier — not a substitute for the project's two-independent-annotator protocol, and not a claim of inter-annotator agreement. `annotation_status = "single_pass_reviewed"` marks exactly this: source-checked, outcome logic explained, single-reviewer-approved. It is never scored as gold (`evaluate.py`/`experiments.py` only score `gold_verified` rows), and a paper reporting results from this project must describe `single_pass_reviewed` items as a distinct, lower-rigor tier if they are discussed at all — never folded into a claim of independently verified gold.
 
 ## Required item fields
 
@@ -37,7 +37,7 @@ Each non-empty line of a benchmark JSONL file is one JSON object:
 | `exemptions_dependencies` | Relevant exemption, exclusion, dependency and cross-reference records, including their priority only where a source establishes one. |
 | `gold_outcome` | Exactly one of `Applicable`, `Not applicable`, `Indeterminate`, `Conflict`. In draft files it is a hypothesis, not gold truth. |
 | `gold_explanation` | Explanation grounded in official evidence, with the candidate rationale kept separate from verified annotation notes. |
-| `annotation_status` | `draft`, `ai_reviewed`, `dual_annotated`, `adjudicated`, or `gold_verified`. |
+| `annotation_status` | `draft`, `single_pass_reviewed`, `dual_annotated`, `adjudicated`, or `gold_verified`. |
 | `annotations` | Independent annotator outcomes/notes and adjudication metadata; see annotation protocol below. |
 | `scenario_tags` | Tags used to stratify evaluation, e.g. `pre_amendment`, `post_amendment`, `missing_fact`, `exemption`. |
 | `split_group_id` | Group identifier preventing related versions/amendment variants leaking across benchmark splits. |

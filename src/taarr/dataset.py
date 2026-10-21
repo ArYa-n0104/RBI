@@ -16,12 +16,13 @@ from typing import Any
 from urllib.parse import urlparse
 
 OUTCOMES = {"Applicable", "Not applicable", "Indeterminate", "Conflict"}
-ANNOTATION_STATUSES = {"draft", "ai_reviewed", "dual_annotated", "adjudicated", "gold_verified"}
-# "ai_reviewed": a single AI-assisted pass checked the item's quoted clause text against
-# the official source and the project owner approved the candidate label. This is NOT
-# the project's two-independent-annotator protocol and must never be scored as gold;
-# evaluate.py/experiments.py/provenance_audit.py only ever score/require
-# annotation_status == "gold_verified", so this status is automatically excluded.
+ANNOTATION_STATUSES = {"draft", "single_pass_reviewed", "dual_annotated", "adjudicated", "gold_verified"}
+# "single_pass_reviewed": one drafting-and-check pass confirmed the item's quoted clause
+# text against the official source, and the project owner reviewed and approved the
+# outcome. This is NOT the project's two-independent-annotator protocol and must never
+# be scored as gold; evaluate.py/experiments.py/provenance_audit.py only ever
+# score/require annotation_status == "gold_verified", so this status is automatically
+# excluded from any reported metric.
 REQUIRED_FIELDS = {
     "benchmark_item_id",
     "query",
