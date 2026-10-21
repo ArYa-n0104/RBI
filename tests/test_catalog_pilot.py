@@ -50,7 +50,7 @@ PARA17_TARGET = "RBI-KYC-PARA17-OTP-EKYC-BALANCE-CAP"
 
 def test_pilot_catalog_loads_both_obligations_with_their_exemptions():
     catalog = load_catalog(CATALOG_PATH)
-    assert catalog.obligation_count == 9
+    assert catalog.obligation_count == 60
     version = catalog.obligations[TARGET].versions[0]
     assert len(version.exemptions) == 1
     assert version.exemptions[0].relation_id == "RBI-KYC-PARA2-SMALL-ACCOUNT-PROVISO"
@@ -89,11 +89,6 @@ PEP_TARGET = "RBI-KYC-PARA41A-PEP-APPROVAL"
 VCIP_TARGET = "RBI-KYC-PARA18C-VCIP-DATA-LOCALIZATION"
 NONF2F_TARGET = "RBI-KYC-PARA40F-NONFACETOFACE-HIGHRISK"
 RETENTION_TARGET = "RBI-KYC-PARA46A-RECORD-RETENTION"
-
-
-def test_catalog_grew_to_nine_obligations():
-    catalog = load_catalog(CATALOG_PATH)
-    assert catalog.obligation_count == 9
 
 
 def test_walkin_threshold_applies_at_or_above_fifty_thousand():
@@ -267,3 +262,125 @@ def test_non_small_account_remains_applicable():
         {"is_rbi_regulated_entity": True, "is_small_account": False},
     )
     assert outcome == Outcome.APPLICABLE
+
+
+# -- Bulk batch added 2026-10-21: 51 more obligations from the two in-scope
+# instruments (RBI KYC Master Direction, SEBI LODR Regulations). One positive
+# + one negative resolver case per obligation, parametrized to stay in lock-step
+# with the matching draft benchmark items in draft_items.jsonl.
+import pytest
+
+BULK_BATCH_CASES = [
+    ("RBI-KYC-PARA10-1-ANONYMOUS-ACCOUNT-PROHIBITION", date(2025, 9, 1), {'is_rbi_regulated_entity': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA10-1-ANONYMOUS-ACCOUNT-PROHIBITION", date(2025, 9, 1), {'is_rbi_regulated_entity': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA10-2-CDD-INCOMPLETE-BAR", date(2025, 9, 1), {'is_unable_to_complete_cdd': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA10-2-CDD-INCOMPLETE-BAR", date(2025, 9, 1), {'is_unable_to_complete_cdd': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA3-BO-COMPANY-THRESHOLD", date(2025, 9, 1), {'is_company_customer': True, 'shareholder_ownership_percentage': 25}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA3-BO-COMPANY-THRESHOLD", date(2025, 9, 1), {'is_company_customer': True, 'shareholder_ownership_percentage': 5}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA3-BO-UNINCORPORATED-THRESHOLD", date(2025, 9, 1), {'is_unincorporated_body_customer': True, 'member_ownership_percentage': 20}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA3-BO-UNINCORPORATED-THRESHOLD", date(2025, 9, 1), {'is_unincorporated_body_customer': True, 'member_ownership_percentage': 5}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA3-BO-TRUST-THRESHOLD", date(2025, 9, 1), {'is_trust_customer': True, 'beneficiary_interest_percentage': 10}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA3-BO-TRUST-THRESHOLD", date(2025, 9, 1), {'is_trust_customer': True, 'beneficiary_interest_percentage': 5}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA16B-INDIVIDUAL-PAN-FORM60", date(2025, 9, 1), {'is_individual_customer': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA16B-INDIVIDUAL-PAN-FORM60", date(2025, 9, 1), {'is_individual_customer': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA30-COMPANY-PAN", date(2025, 9, 1), {'is_company_customer': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA30-COMPANY-PAN", date(2025, 9, 1), {'is_company_customer': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA32-TRUST-PAN-FORM60", date(2025, 9, 1), {'is_trust_customer': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA32-TRUST-PAN-FORM60", date(2025, 9, 1), {'is_trust_customer': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA5A-RISK-METHODOLOGY-ANNUAL-REVIEW", date(2025, 9, 1), {'is_rbi_regulated_entity': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA5A-RISK-METHODOLOGY-ANNUAL-REVIEW", date(2025, 9, 1), {'is_rbi_regulated_entity': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA37A-RISK-REVIEW-PERIODICITY", date(2025, 9, 1), {'is_rbi_regulated_entity': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA37A-RISK-REVIEW-PERIODICITY", date(2025, 9, 1), {'is_rbi_regulated_entity': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA12-4-RISK-RATING-CONFIDENTIALITY", date(2025, 9, 1), {'is_rbi_regulated_entity': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA12-4-RISK-RATING-CONFIDENTIALITY", date(2025, 9, 1), {'is_rbi_regulated_entity': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA38-HIGHRISK-REKYC-2YEARS", date(2025, 9, 1), {'risk_category': 'high'}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA38-HIGHRISK-REKYC-2YEARS", date(2025, 9, 1), {'risk_category': 'low'}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA38-MEDIUMRISK-REKYC-8YEARS", date(2025, 9, 1), {'risk_category': 'medium'}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA38-MEDIUMRISK-REKYC-8YEARS", date(2025, 9, 1), {'risk_category': 'high'}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA38-LOWRISK-REKYC-10YEARS", date(2025, 9, 1), {'risk_category': 'low'}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA38-LOWRISK-REKYC-10YEARS", date(2025, 9, 1), {'risk_category': 'medium'}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA38-ADDRESS-CHANGE-VERIFICATION", date(2025, 9, 1), {'has_changed_address': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA38-ADDRESS-CHANGE-VERIFICATION", date(2025, 9, 1), {'has_changed_address': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA38-ADVANCE-INTIMATION-COUNT", date(2025, 9, 1), {'is_rbi_regulated_entity': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA38-ADVANCE-INTIMATION-COUNT", date(2025, 9, 1), {'is_rbi_regulated_entity': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA39-CESSATION-ON-NONCOMPLIANCE", date(2025, 9, 1), {'has_failed_to_submit_pan_or_form60': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA39-CESSATION-ON-NONCOMPLIANCE", date(2025, 9, 1), {'has_failed_to_submit_pan_or_form60': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA40B-MOBILE-NUMBER-RESTRICTION", date(2025, 9, 1), {'is_non_face_to_face_onboarding': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA40B-MOBILE-NUMBER-RESTRICTION", date(2025, 9, 1), {'is_non_face_to_face_onboarding': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA40C-ADDRESS-VERIFICATION-BEFORE-OPERATIONS", date(2025, 9, 1), {'is_non_face_to_face_onboarding': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA40C-ADDRESS-VERIFICATION-BEFORE-OPERATIONS", date(2025, 9, 1), {'is_non_face_to_face_onboarding': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA40E-FIRST-TRANSACTION-SOURCE", date(2025, 9, 1), {'is_non_face_to_face_onboarding': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA40E-FIRST-TRANSACTION-SOURCE", date(2025, 9, 1), {'is_non_face_to_face_onboarding': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA43-SHG-MEMBER-CDD-RELIEF", date(2025, 9, 1), {'is_shg_savings_account': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA43-SHG-MEMBER-CDD-RELIEF", date(2025, 9, 1), {'is_shg_savings_account': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA44A-LOCAL-ADDRESS-DECLARATION", date(2025, 9, 1), {'is_foreign_student_account': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA44A-LOCAL-ADDRESS-DECLARATION", date(2025, 9, 1), {'is_foreign_student_account': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA44A-REMITTANCE-CAP-PENDING-VERIFICATION", date(2025, 9, 1), {'is_foreign_student_account': True, 'address_verification_pending': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA44A-REMITTANCE-CAP-PENDING-VERIFICATION", date(2025, 9, 1), {'is_foreign_student_account': True, 'address_verification_pending': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA44C-PAKISTANI-STUDENT-APPROVAL", date(2025, 9, 1), {'is_foreign_student_account': True, 'student_nationality': 'Pakistani'}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA44C-PAKISTANI-STUDENT-APPROVAL", date(2025, 9, 1), {'is_foreign_student_account': True, 'student_nationality': 'Other'}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA46B-IDENTIFICATION-RECORD-RETENTION", date(2025, 9, 1), {'is_rbi_regulated_entity': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA46B-IDENTIFICATION-RECORD-RETENTION", date(2025, 9, 1), {'is_rbi_regulated_entity': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA6D-DESIGNATED-DIRECTOR-SEPARATION", date(2025, 9, 1), {'is_rbi_regulated_entity': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA6D-DESIGNATED-DIRECTOR-SEPARATION", date(2025, 9, 1), {'is_rbi_regulated_entity': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA42-6-ULTIMATE-RESPONSIBILITY", date(2025, 9, 1), {'is_rbi_regulated_entity': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA42-6-ULTIMATE-RESPONSIBILITY", date(2025, 9, 1), {'is_rbi_regulated_entity': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA11A-STR-IN-LIEU-OF-CDD", date(2025, 9, 1), {'continuing_cdd_would_tip_off_customer': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA11A-STR-IN-LIEU-OF-CDD", date(2025, 9, 1), {'continuing_cdd_would_tip_off_customer': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA13-2-INTL-TRANSFER-CDD", date(2025, 9, 1), {'is_international_transfer_for_non_accountholder': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA13-2-INTL-TRANSFER-CDD", date(2025, 9, 1), {'is_international_transfer_for_non_accountholder': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA18B-IV-VCIP-PROMPTING-REJECTION", date(2025, 9, 1), {'uses_vcip_onboarding': True, 'prompting_observed_during_vcip': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA18B-IV-VCIP-PROMPTING-REJECTION", date(2025, 9, 1), {'uses_vcip_onboarding': True, 'prompting_observed_during_vcip': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA18B-XII-VCIP-CONCURRENT-AUDIT", date(2025, 9, 1), {'uses_vcip_onboarding': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA18B-XII-VCIP-CONCURRENT-AUDIT", date(2025, 9, 1), {'uses_vcip_onboarding': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA18B-VI-AADHAAR-FRESHNESS", date(2025, 9, 1), {'uses_vcip_onboarding': True, 'uses_aadhaar_xml_or_qr': True, 'aadhaar_document_age_working_days': 2}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA18B-VI-AADHAAR-FRESHNESS", date(2025, 9, 1), {'uses_vcip_onboarding': True, 'uses_aadhaar_xml_or_qr': True, 'aadhaar_document_age_working_days': 5}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA14-4-THIRD-PARTY-JURISDICTION-RESTRICTION", date(2025, 9, 1), {'relies_on_third_party_for_cdd': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA14-4-THIRD-PARTY-JURISDICTION-RESTRICTION", date(2025, 9, 1), {'relies_on_third_party_for_cdd': False}, Outcome.NOT_APPLICABLE),
+    ("RBI-KYC-PARA49-NO-RESTRICTION-ON-STR-FILING", date(2025, 9, 1), {'is_str_filed': True}, Outcome.APPLICABLE),
+    ("RBI-KYC-PARA49-NO-RESTRICTION-ON-STR-FILING", date(2025, 9, 1), {'is_str_filed': False}, Outcome.NOT_APPLICABLE),
+    ("SEBI-LODR-REG17-1A-BOARD-COMPOSITION", date(2026, 8, 1), {'is_listed_entity': True}, Outcome.APPLICABLE),
+    ("SEBI-LODR-REG17-1A-BOARD-COMPOSITION", date(2026, 8, 1), {'is_listed_entity': False}, Outcome.NOT_APPLICABLE),
+    ("SEBI-LODR-REG17-1B-ONETHIRD-INDEPENDENT", date(2026, 8, 1), {'chairperson_is_non_executive': True, 'chairperson_is_promoter_or_related': False}, Outcome.APPLICABLE),
+    ("SEBI-LODR-REG17-1B-ONETHIRD-INDEPENDENT", date(2026, 8, 1), {'chairperson_is_non_executive': True, 'chairperson_is_promoter_or_related': True}, Outcome.NOT_APPLICABLE),
+    ("SEBI-LODR-REG17-1B-HALF-INDEPENDENT-PROMOTER-CHAIR", date(2026, 8, 1), {'chairperson_is_non_executive': True, 'chairperson_is_promoter_or_related': True}, Outcome.APPLICABLE),
+    ("SEBI-LODR-REG17-1B-HALF-INDEPENDENT-PROMOTER-CHAIR", date(2026, 8, 1), {'chairperson_is_non_executive': True, 'chairperson_is_promoter_or_related': False}, Outcome.NOT_APPLICABLE),
+    ("SEBI-LODR-REG17-1B-HALF-INDEPENDENT-NO-NONEXEC-CHAIR", date(2026, 8, 1), {'chairperson_is_non_executive': False}, Outcome.APPLICABLE),
+    ("SEBI-LODR-REG17-1B-HALF-INDEPENDENT-NO-NONEXEC-CHAIR", date(2026, 8, 1), {'chairperson_is_non_executive': True}, Outcome.NOT_APPLICABLE),
+    ("SEBI-LODR-REG17-1C-MIN-SIX-DIRECTORS", date(2026, 8, 1), {'is_top_2000_listed_entity': True}, Outcome.APPLICABLE),
+    ("SEBI-LODR-REG17-1C-MIN-SIX-DIRECTORS", date(2026, 8, 1), {'is_top_2000_listed_entity': False}, Outcome.NOT_APPLICABLE),
+    ("SEBI-LODR-REG17-1D-SR-SHARES-HALF-INDEPENDENT", date(2026, 8, 1), {'entity_has_sr_equity_shares': True}, Outcome.APPLICABLE),
+    ("SEBI-LODR-REG17-1D-SR-SHARES-HALF-INDEPENDENT", date(2026, 8, 1), {'entity_has_sr_equity_shares': False}, Outcome.NOT_APPLICABLE),
+    ("SEBI-LODR-REG17-1A-AGE-SPECIAL-RESOLUTION", date(2026, 8, 1), {'is_non_executive_director': True, 'director_age': 76}, Outcome.APPLICABLE),
+    ("SEBI-LODR-REG17-1A-AGE-SPECIAL-RESOLUTION", date(2026, 8, 1), {'is_non_executive_director': True, 'director_age': 60}, Outcome.NOT_APPLICABLE),
+    ("SEBI-LODR-REG17-2-BOARD-MEETING-FREQUENCY", date(2026, 8, 1), {'is_listed_entity': True}, Outcome.APPLICABLE),
+    ("SEBI-LODR-REG17-2-BOARD-MEETING-FREQUENCY", date(2026, 8, 1), {'is_listed_entity': False}, Outcome.NOT_APPLICABLE),
+    ("SEBI-LODR-REG18-1A-MIN-AUDIT-COMMITTEE-SIZE", date(2026, 8, 1), {'is_listed_entity': True}, Outcome.APPLICABLE),
+    ("SEBI-LODR-REG18-1A-MIN-AUDIT-COMMITTEE-SIZE", date(2026, 8, 1), {'is_listed_entity': False}, Outcome.NOT_APPLICABLE),
+    ("SEBI-LODR-REG18-1B-AUDIT-COMMITTEE-INDEPENDENCE", date(2026, 8, 1), {'is_listed_entity': True}, Outcome.APPLICABLE),
+    ("SEBI-LODR-REG18-1B-AUDIT-COMMITTEE-INDEPENDENCE", date(2026, 8, 1), {'is_listed_entity': False}, Outcome.NOT_APPLICABLE),
+    ("SEBI-LODR-REG18-2A-AUDIT-COMMITTEE-MEETING-FREQUENCY", date(2026, 8, 1), {'is_listed_entity': True}, Outcome.APPLICABLE),
+    ("SEBI-LODR-REG18-2A-AUDIT-COMMITTEE-MEETING-FREQUENCY", date(2026, 8, 1), {'is_listed_entity': False}, Outcome.NOT_APPLICABLE),
+    ("SEBI-LODR-REG19-1A-NRC-MIN-SIZE", date(2026, 8, 1), {'is_listed_entity': True}, Outcome.APPLICABLE),
+    ("SEBI-LODR-REG19-1A-NRC-MIN-SIZE", date(2026, 8, 1), {'is_listed_entity': False}, Outcome.NOT_APPLICABLE),
+    ("SEBI-LODR-REG21-3A-RMC-MEETING-FREQUENCY", date(2026, 8, 1), {'is_subject_to_rmc_requirement': True}, Outcome.APPLICABLE),
+    ("SEBI-LODR-REG21-3A-RMC-MEETING-FREQUENCY", date(2026, 8, 1), {'is_subject_to_rmc_requirement': False}, Outcome.NOT_APPLICABLE),
+    ("SEBI-LODR-REG13-1-GRIEVANCE-REDRESSAL-TIMELINE", date(2026, 8, 1), {'is_listed_entity': True}, Outcome.APPLICABLE),
+    ("SEBI-LODR-REG13-1-GRIEVANCE-REDRESSAL-TIMELINE", date(2026, 8, 1), {'is_listed_entity': False}, Outcome.NOT_APPLICABLE),
+    ("SEBI-LODR-REG9-RECORD-PRESERVATION", date(2026, 8, 1), {'is_listed_entity': True}, Outcome.APPLICABLE),
+    ("SEBI-LODR-REG9-RECORD-PRESERVATION", date(2026, 8, 1), {'is_listed_entity': False}, Outcome.NOT_APPLICABLE),
+    ("SEBI-LODR-REG2-1ZB-RELATED-PARTY-10PCT-THRESHOLD", date(2023, 5, 1), {'shareholder_equity_percentage': 15}, Outcome.APPLICABLE),
+    ("SEBI-LODR-REG2-1ZB-RELATED-PARTY-10PCT-THRESHOLD", date(2023, 5, 1), {'shareholder_equity_percentage': 5}, Outcome.NOT_APPLICABLE),
+    ("SEBI-LODR-REG2-1ZC-RELATED-PARTY-20PCT-THRESHOLD", date(2026, 8, 1), {'shareholder_equity_percentage': 25}, Outcome.APPLICABLE),
+    ("SEBI-LODR-REG2-1ZC-RELATED-PARTY-20PCT-THRESHOLD", date(2026, 8, 1), {'shareholder_equity_percentage': 15}, Outcome.NOT_APPLICABLE),
+]
+
+
+@pytest.mark.parametrize("obligation_id,reference_date,profile,expected", BULK_BATCH_CASES)
+def test_bulk_batch_obligation_resolves_as_expected(obligation_id, reference_date, profile, expected):
+    assert _resolve_for(obligation_id, reference_date, profile) == expected
+
+
+def test_catalog_grew_to_sixty_obligations():
+    catalog = load_catalog(CATALOG_PATH)
+    assert catalog.obligation_count == 60
