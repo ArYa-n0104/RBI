@@ -1,8 +1,8 @@
-TAARR PROJECT - PENDING ITEM: TWO-PERSON (DUAL-ANNOTATOR) VERIFICATION
-Status as of: 2026-10-21 (updated same day, night)
-Status: ANNOTATOR 1 DONE FOR BOTH THE 60 RULES AND THE 127 QUESTIONS.
-         STILL WAITING ON A SECOND, INDEPENDENT ANNOTATOR FOR THE 127 QUESTIONS.
-Related decision records: docs/DECISIONS.md, entries D-005, D-006, D-007
+TAARR PROJECT - PENDING ITEM: SOURCE-TEXT ADJUDICATION (LAST STEP BEFORE GOLD)
+Status as of: 2026-10-21 (updated same day, later that night)
+Status: BOTH HUMAN ANNOTATORS DONE. ALL 127 QUESTIONS NOW "DUAL_ANNOTATED."
+         ONE STEP LEFT: CHECKING SOURCE LINKS/CLAUSE IDS/DATES BEFORE "GOLD_VERIFIED."
+Related decision records: docs/DECISIONS.md, entries D-005, D-006, D-007, D-008
 
 ------------------------------------------------------------------------
 WHAT THIS IS
@@ -68,14 +68,27 @@ text. The open legal question already on record for those two items
 (does paragraph 23's carve-out really reach paragraph 38(e)
 specifically) is still open.
 
-WHAT THIS DOES NOT YET DO: the project's own draft hypothesis has never
-counted, and still does not count, as one of the two required
-independent human annotators -- it is the thing being checked. Today's
-5-person pass is annotator_1. A second, DIFFERENT independent person or
-group still needs to answer the same 127 questions, blind to both the
-hypothesis and to annotator_1's answers, before any item can be
-dual_annotated. Only disagreement between the two HUMANS (not between
-a human and the hypothesis) gets adjudicated into gold_verified.
+UPDATE (same day, later): a SECOND, different independent pass has now
+happened too. A different group of 3 people (confirmed by the project
+owner to be different individuals from the first 5, who answered
+blind -- without seeing annotator_1's answers or the hypothesis)
+answered the same 127 questions. Recorded as annotations.annotator_2.
+
+THE RESULT: comparing the two real human passes against EACH OTHER
+(annotator_1 vs annotator_2, not vs. the hypothesis) -- all 127 items
+match. Zero disagreements. This is genuine dual annotation as the
+project's own protocol defines it. All 127 items have been promoted
+from draft/single_pass_reviewed to annotation_status "dual_annotated."
+See D-008 in DECISIONS.md.
+
+WHAT THIS STILL DOES NOT DO: get any item to "gold_verified." The
+project's own protocol (docs/ANNOTATION_PROTOCOL.md, point 6) requires
+one more thing beyond annotator agreement: actually checking each
+item's source URL, clause ID, effective date, related provisions, and
+that the outcome/explanation text is accurate. Two humans agreeing is
+strong, real evidence -- but it is not the same as that source check,
+which has not been done yet. No item carries an
+annotations.adjudication record yet, and none is gold_verified.
 
 ------------------------------------------------------------------------
 WHY THIS MATTERS -- WHAT DEPENDS ON IT
@@ -109,31 +122,40 @@ claimed until it is resolved:
    numbers until the step above produces them.
 
 In short: Phase 4 (dataset) has made real progress today -- the source
-rules are now human-confirmed -- but still cannot be marked fully done,
-and Phase 5 (evaluation) still cannot produce trustworthy final
-numbers, until a second independent person checks the benchmark
-questions.
+rules are human-confirmed and all 127 benchmark questions are now
+genuinely dual-annotated by two independent human groups who agree on
+every single item. But Phase 5 (evaluation) still cannot produce
+trustworthy final numbers until the one remaining check below is done.
 
 ------------------------------------------------------------------------
 WHAT WOULD UNBLOCK IT NOW
 ------------------------------------------------------------------------
 
-Any ONE of the following would close this gap for good:
-  - A different, genuinely independent second person or group (not
-    any of the 5 who already did annotator_1 today) answers the same
-    127 questions on their own, without seeing annotator_1's answers
-    or the project's own hypothesis first.
-  - The project owner, or the same 5 reviewers, do a second, separate
-    pass over the 127 questions at a later date, without looking back
-    at today's answers -- weaker than a genuinely different second
-    person, but a documented fallback if no one else is available.
-  - Any other genuinely independent second reviewer is found.
+Dual annotation is DONE. What's left is the source-text adjudication
+check required by docs/ANNOTATION_PROTOCOL.md point 6 before any item
+can be called "gold_verified": for each of the 127 items, actually open
+the official RBI/SEBI source, and confirm:
+  - the source URL is correct and reachable,
+  - the clause ID/paragraph/regulation number is correct,
+  - the effective date used in the question is correct,
+  - any related provisions (exemptions, carve-outs) are correctly
+    accounted for,
+  - the outcome and the one-line explanation text are accurate.
 
-Once a second pass exists: compare it to annotator_1 (today's pass),
-not to the project's hypothesis. Agreement -> dual_annotated. Any
-disagreement -> adjudicate against the actual official text and record
-which answer is right and why -> gold_verified.
+Where this agrees with what's already recorded, write an
+annotations.adjudication entry confirming it and promote to
+gold_verified. Where it does NOT agree, record what the source
+actually says and why, and fix the item (or mark it Conflict/
+Indeterminate as appropriate) before promoting it.
 
-Until then: this file exists so nobody forgets this gap is open, and
-so nobody accidentally writes "verified" or "gold" results into the
-paper that the data does not actually support yet.
+Special note: items 4 and 5 (the "small account" exemption question)
+still carry an open legal question flagged under D-007 -- whether
+paragraph 23's small-account carve-out actually reaches paragraph
+38(e) specifically. Both annotator passes agreed with each other on
+these two, but that agreement does not resolve the underlying legal
+question; it needs the source-text check like everything else, maybe
+more carefully.
+
+Until this check is done: this file exists so nobody forgets this gap
+is open, and so nobody accidentally writes "verified" or "gold"
+results into the paper that the data does not actually support yet.
