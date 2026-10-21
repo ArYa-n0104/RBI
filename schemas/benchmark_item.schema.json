@@ -88,7 +88,7 @@
     },
     "gold_outcome": {"enum": ["Applicable", "Not applicable", "Indeterminate", "Conflict"]},
     "gold_explanation": {"type": "string", "minLength": 1},
-    "annotation_status": {"enum": ["draft", "dual_annotated", "adjudicated", "gold_verified"]},
+    "annotation_status": {"enum": ["draft", "ai_reviewed", "dual_annotated", "adjudicated", "gold_verified"]},
     "annotations": {"type": "object"},
     "scenario_tags": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
     "split_group_id": {"type": "string", "minLength": 1}
