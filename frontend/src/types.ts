@@ -154,7 +154,11 @@ export interface FactExtractionResponse {
 export interface ChecklistRow {
   obligation_id: string;
   regulator?: string | null;
+  instrument_id?: string | null;
   instrument_title?: string | null;
+  circular_url?: string | null;
+  effective_from?: string | null;
+  decided_by: string[];
   clause_id?: string | null;
   clause_summary?: string | null;
   action?: string | null;

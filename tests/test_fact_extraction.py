@@ -163,3 +163,15 @@ def test_gemini_model_comes_from_the_environment(monkeypatch):
     monkeypatch.delenv("GEMINI_MODEL")
     c2 = TestClient(create_app(http_client=_Client(json.dumps({"facts": []}))))
     assert c2.get("/api/v1/health").json()["gemini_model"] == "gemini-2.5-flash-lite"
+
+
+def test_checklist_rows_say_which_questions_decide_them(monkeypatch):
+    c = _client(monkeypatch)
+    body = c.post(CHECKLIST_URL, json={"entity_profile": {}, "reference_date": "2026-10-22"}).json()
+    rows = [row for rows in body["groups"].values() for row in rows]
+    registry = load_fact_registry()
+    assert all(row["decided_by"] for row in rows)
+    assert all(set(row["decided_by"]) <= set(registry.facts) for row in rows)
+    assert all(row["circular_url"].startswith("https://") for row in rows)
+    small = next(row for row in rows if row["obligation_id"] == "RBI-KYC-P38E-DUE-NOTICES")
+    assert "is_small_account" in small["decided_by"]  # comes from the exemption

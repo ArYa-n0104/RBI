@@ -134,6 +134,26 @@ def policy_from_environment() -> ResolverPolicy | None:
         return None
 
 
+def _decisive_facts(record: dict[str, Any]) -> list[str]:
+    """Every fact a rule's conditions, exemptions or dependencies test, in order."""
+    found: list[str] = []
+
+    def walk(node: Any) -> None:
+        if isinstance(node, dict):
+            attribute = node.get("attribute")
+            if isinstance(attribute, str) and attribute not in found:
+                found.append(attribute)
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    for key in ("conditions", "exemptions", "dependencies"):
+        walk(record.get(key))
+    return found
+
+
 def _policy_to_dict(policy: ResolverPolicy) -> dict[str, str]:
     return {
         "no_version": policy.no_version.value,
@@ -593,7 +613,11 @@ def create_app(
             row: dict[str, Any] = {
                 "obligation_id": obligation_id,
                 "regulator": latest.get("regulator"),
+                "instrument_id": latest.get("instrument_id"),
                 "instrument_title": latest.get("instrument_title"),
+                "circular_url": latest.get("consolidated_source_url") or latest.get("source_url"),
+                "effective_from": latest.get("effective_from"),
+                "decided_by": _decisive_facts(latest),
                 "clause_id": latest.get("clause_id"),
                 "clause_summary": latest.get("clause_summary"),
                 "action": latest.get("action"),
