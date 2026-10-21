@@ -45,9 +45,12 @@ def _resolve_for(obligation_id: str, reference_date: date, profile: dict) -> Out
 SEBI_TARGET = "SEBI-LODR-REG15-2B-SME-RPT-APPLICABILITY"
 
 
+PARA17_TARGET = "RBI-KYC-PARA17-OTP-EKYC-BALANCE-CAP"
+
+
 def test_pilot_catalog_loads_both_obligations_with_their_exemptions():
     catalog = load_catalog(CATALOG_PATH)
-    assert catalog.obligation_count == 3
+    assert catalog.obligation_count == 4
     version = catalog.obligations[TARGET].versions[0]
     assert len(version.exemptions) == 1
     assert version.exemptions[0].relation_id == "RBI-KYC-PARA2-SMALL-ACCOUNT-PROVISO"
@@ -60,6 +63,25 @@ def test_pilot_catalog_loads_both_obligations_with_their_exemptions():
     assert len(sebi_version.exemptions) == 0
     sebi_raw = catalog.records_for_obligation(SEBI_TARGET)
     assert sebi_raw[0]["regulator"] == "SEBI"
+
+    para17_raw = catalog.records_for_obligation(PARA17_TARGET)
+    assert para17_raw[0]["regulator"] == "RBI"
+    assert para17_raw[0]["verification_status"] == "source_text_human_confirmed"
+
+
+def test_para17_balance_cap_applies_for_otp_ekyc_account():
+    outcome = _resolve_for(PARA17_TARGET, date(2025, 9, 1), {"is_otp_based_ekyc_account": True})
+    assert outcome == Outcome.APPLICABLE
+
+
+def test_para17_balance_cap_not_applicable_for_full_kyc_account():
+    outcome = _resolve_for(PARA17_TARGET, date(2025, 9, 1), {"is_otp_based_ekyc_account": False})
+    assert outcome == Outcome.NOT_APPLICABLE
+
+
+def test_para17_balance_cap_indeterminate_when_account_type_unknown():
+    outcome = _resolve_for(PARA17_TARGET, date(2025, 9, 1), {})
+    assert outcome == Outcome.INDETERMINATE
 
 
 def test_sebi_sme_rpt_applies_above_equity_capital_threshold():
