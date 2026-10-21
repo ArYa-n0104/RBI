@@ -42,9 +42,12 @@ def _resolve_for(obligation_id: str, reference_date: date, profile: dict) -> Out
     return result.outcome
 
 
+SEBI_TARGET = "SEBI-LODR-REG15-2B-SME-RPT-APPLICABILITY"
+
+
 def test_pilot_catalog_loads_both_obligations_with_their_exemptions():
     catalog = load_catalog(CATALOG_PATH)
-    assert catalog.obligation_count == 2
+    assert catalog.obligation_count == 3
     version = catalog.obligations[TARGET].versions[0]
     assert len(version.exemptions) == 1
     assert version.exemptions[0].relation_id == "RBI-KYC-PARA2-SMALL-ACCOUNT-PROVISO"
@@ -52,6 +55,58 @@ def test_pilot_catalog_loads_both_obligations_with_their_exemptions():
     pan_version = catalog.obligations["RBI-KYC-PARA39-PAN-FORM60"].versions[0]
     assert len(pan_version.exemptions) == 1
     assert pan_version.exemptions[0].relation_id == "RBI-KYC-PARA39-INFIRMITY-RELAXATION"
+
+    sebi_version = catalog.obligations[SEBI_TARGET].versions[0]
+    assert len(sebi_version.exemptions) == 0
+    sebi_raw = catalog.records_for_obligation(SEBI_TARGET)
+    assert sebi_raw[0]["regulator"] == "SEBI"
+
+
+def test_sebi_sme_rpt_applies_above_equity_capital_threshold():
+    outcome = _resolve_for(
+        SEBI_TARGET,
+        date(2025, 6, 1),
+        {"is_sme_exchange_listed": True, "paid_up_equity_capital_crore": 12, "net_worth_crore": 5},
+    )
+    assert outcome == Outcome.APPLICABLE
+
+
+def test_sebi_sme_rpt_applies_above_net_worth_threshold_alone():
+    outcome = _resolve_for(
+        SEBI_TARGET,
+        date(2025, 6, 1),
+        {"is_sme_exchange_listed": True, "paid_up_equity_capital_crore": 2, "net_worth_crore": 30},
+    )
+    assert outcome == Outcome.APPLICABLE
+
+
+def test_sebi_sme_rpt_not_applicable_below_both_thresholds():
+    outcome = _resolve_for(
+        SEBI_TARGET,
+        date(2025, 6, 1),
+        {"is_sme_exchange_listed": True, "paid_up_equity_capital_crore": 6, "net_worth_crore": 8},
+    )
+    assert outcome == Outcome.NOT_APPLICABLE
+
+
+def test_sebi_sme_rpt_indeterminate_when_one_threshold_fact_is_missing():
+    """If equity capital is below threshold but net worth is unknown, the unknown fact
+    could independently trigger applicability -- the resolver must abstain, not assume."""
+    outcome = _resolve_for(
+        SEBI_TARGET,
+        date(2025, 6, 1),
+        {"is_sme_exchange_listed": True, "paid_up_equity_capital_crore": 4},
+    )
+    assert outcome == Outcome.INDETERMINATE
+
+
+def test_sebi_sme_rpt_not_applicable_before_effective_date():
+    outcome = _resolve_for(
+        SEBI_TARGET,
+        date(2025, 1, 1),
+        {"is_sme_exchange_listed": True, "paid_up_equity_capital_crore": 50, "net_worth_crore": 50},
+    )
+    assert outcome == Outcome.NOT_APPLICABLE
 
 
 def test_pan_form60_applies_when_no_infirmity_relaxation_is_known_false():
