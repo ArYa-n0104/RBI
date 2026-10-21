@@ -51,6 +51,7 @@ def test_query_returns_deterministic_outcome_and_provenance(client):
             "query": "RBI KYC due notice",
             "reference_date": "2025-07-01",
             "entity_profile": {"is_rbi_regulated_entity": True},
+            "obligation_ids": ["RBI-KYC-P38E-DUE-NOTICES"],
         },
     )
     assert response.status_code == 200
