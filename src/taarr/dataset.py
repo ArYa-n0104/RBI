@@ -17,15 +17,15 @@ from urllib.parse import urlparse
 
 OUTCOMES = {"Applicable", "Not applicable", "Indeterminate", "Conflict"}
 ANNOTATION_STATUSES = {"draft", "single_pass_reviewed", "dual_annotated", "adjudicated", "gold_verified"}
-# "single_pass_reviewed": meaning changed 2026-10-21 (see D-005 in docs/DECISIONS.md).
-# The project owner opted out of the annotator/reviewer role for the 2026-10-21
-# bulk-added obligations. From that date, this status means the assistant independently
-# re-fetched the clause from the official source a second time and the two fetches
-# agreed (corrected if they didn't) -- NOT that a human reviewed or approved it, and
-# NOT the project's two-independent-annotator protocol. No inter-annotator agreement is
-# implied. This must never be scored as gold; evaluate.py/experiments.py/
-# provenance_audit.py only ever score/require annotation_status == "gold_verified", so
-# this status is automatically excluded from any reported metric.
+# "single_pass_reviewed" / "source_text_human_confirmed" (see D-005, D-006 in docs/DECISIONS.md):
+# on 2026-10-21 the owner briefly opted out of the annotator role (single_pass_reviewed =
+# assistant solo re-fetch, no human review), then resumed it the same day and personally
+# confirmed all 60 obligations' source text against the official RBI/SEBI pages
+# (source_text_human_confirmed). Neither status is the project's two-independent-annotator
+# protocol, which applies at the benchmark-item level, not the obligation level. No
+# inter-annotator agreement is implied by either tier. This must never be scored as gold;
+# evaluate.py/experiments.py/provenance_audit.py only ever score/require annotation_status
+# == "gold_verified", so these statuses are automatically excluded from any reported metric.
 REQUIRED_FIELDS = {
     "benchmark_item_id",
     "query",
