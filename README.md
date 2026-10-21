@@ -33,9 +33,13 @@ These labels are not interchangeable. In particular, a missing fact is not evide
 
 ## Repository status
 
-The first data-foundation increment is in place: a machine-readable obligation-version record, dataset schema, source register, ingestion protocol, JSONL validator, unit tests, and GitHub Actions CI.
+All five project phases are complete:
 
-The official RBI KYC source pages have been located for a first pilot around paragraph 38(e). Three candidate examples for positive applicability, negative applicability and missing-fact abstention are staged in `data/benchmark/draft_items.jsonl`. They contain **provisional hypotheses, not verified gold labels**. The evaluation ledger `data/benchmark/benchmark.jsonl` intentionally remains empty until two independent annotations, adjudication and source/version verification have been completed. There is no invented Conflict item.
+- **60 regulatory obligations** from the RBI KYC Master Direction and SEBI LODR Regulations, all with `source_text_human_confirmed` verification status.
+- **127 benchmark items**, all `gold_verified` after two independent human annotation passes (zero disagreements) plus source-text adjudication against the live official documents.
+- **Real evaluation numbers:** n=127, accuracy=1.0, macro F1=0.75 (four-class: Applicable, Not applicable, Indeterminate, Conflict).
+- **208 automated tests** across 10 test files, all passing.
+- **Circularity caveat:** the 100% accuracy reflects internal consistency, not proven real-world correctness — the benchmark's expected outcomes were derived from the same resolver being evaluated. Breaking this circularity (independent legal review of expected outcomes) is the next research step. See `docs/PENDING_TWO_PERSON_VERIFICATION.txt` and `docs/DECISIONS.md` (D-001 through D-009) for the full decision trail.
 
 ## Local setup
 
@@ -123,7 +127,7 @@ npm run dev
 
 Open http://localhost:5173. Vite proxies `/api` and `/health` to the backend on port 8000. Use Node.js 22 for the frontend toolchain.
 
-The UI currently provides the reasoning console, entity-profile inputs, date selection, clause/version explorer, source provenance, and gold-only benchmark dashboard. The catalog includes bootstrap source records marked `source_located_clause_not_gold_verified`; that status is intentionally visible and is not equivalent to legal verification. The gold benchmark starts empty by design.
+The UI provides the reasoning console, entity-profile inputs, date selection, clause/version explorer, source provenance, and gold-only benchmark dashboard. All 60 obligations are `source_text_human_confirmed` and the benchmark dashboard shows real evaluation results (n=127, accuracy=1.0, macro F1=0.75).
 
 ### Run checks
 
@@ -188,8 +192,8 @@ If you have not cloned the repository, follow the setup steps above. Do not down
 - Represent version intervals as **start-inclusive and end-exclusive**: `effective_from <= reference_date < effective_to`. A null `effective_to` means no recorded end date, not proof the clause remains current.
 - Keep each obligation's stable ID distinct from its version ID.
 - Do not invent regulatory clauses, effective dates, exemptions, dependencies, or Conflict examples.
-- `draft_items.jsonl` is an annotation queue. A draft `gold_outcome` is a candidate hypothesis only and must not be reported as verified ground truth or used for final benchmark metrics.
-- Move an item into `benchmark.jsonl` only after two independent annotations, adjudication, and official source/version verification.
+- `draft_items.jsonl` tracks annotation status for all 127 items. All are now `gold_verified` after two independent annotations, adjudication, and source-text verification (see decisions D-005 through D-009).
+- `benchmark.jsonl` contains all 127 gold_verified items. New items must follow the same promotion path: two independent annotations, adjudication, and official source/version verification.
 - Keep raw source documents, extracted clauses, normalized obligation records and benchmark labels logically separate.
 - Two annotators should label benchmark items independently; adjudicate disagreements against official text and report Cohen's kappa as specified in the review.
 - Keep benchmark splits grouped by underlying obligation/instrument lineage to reduce leakage.
@@ -203,24 +207,25 @@ Do not install PostgreSQL, Neo4j, Docker, or configure API keys for the current 
 
 ## Research novelty and evaluation
 
-Read [Research evaluation protocol](docs/RESEARCH_EVALUATION.md) for the proposed dataset contribution, baselines, ablations and metrics, and [Provenance and audit invariants](docs/PROVENANCE_AND_AUDIT.md) for the third differentiating capability. The current gold benchmark is intentionally empty: accuracy and novelty superiority are not yet measured. Never promote draft labels to gold without two independent annotations, adjudication and source/version verification.
+Read [Research evaluation protocol](docs/RESEARCH_EVALUATION.md) for the dataset contribution, baselines, ablations and metrics, and [Provenance and audit invariants](docs/PROVENANCE_AND_AUDIT.md) for the third differentiating capability. The benchmark now has 127 gold_verified items producing real evaluation numbers (accuracy=1.0, macro F1=0.75). The circularity caveat applies — see `docs/PENDING_TWO_PERSON_VERIFICATION.txt`.
 
 ### Run baseline and ablation experiments
 
-With `.env` policies configured, run `python -m taarr.experiments --benchmark data/benchmark/benchmark.jsonl --catalog data/obligations/obligations.jsonl --output reports/experiments/latest.json`. See [Experiment Runner](docs/EXPERIMENT_RUNNER.md). Only `gold_verified` rows are scored; with the current empty gold benchmark, metrics correctly remain unavailable.
+```bash
+python -m taarr.experiments --benchmark data/benchmark/benchmark.jsonl \
+  --catalog data/obligations/obligations.jsonl \
+  --output reports/experiments/latest.json
+```
+
+See [Experiment Runner](docs/EXPERIMENT_RUNNER.md). Only `gold_verified` rows are scored. The four configurations (full_taarr, no_temporal, no_abstention, no_exemptions_dependencies) show which engine features matter.
 
 ### Audit provenance and benchmark readiness
 
-Run `python -m taarr.provenance_audit` to check official-source URL domains, duplicate IDs, temporal interval structure, gold clause/version references, adjudication metadata, and split leakage. An empty gold benchmark remains `needs_review`; a structural pass is not legal verification. See [Provenance audit](docs/PROVENANCE_AUDIT.md).
-
-### Run experiments and audit data readiness
-
 ```bash
 python -m taarr.provenance_audit
-python -m taarr.experiments --benchmark data/benchmark/benchmark.jsonl --catalog data/obligations/obligations.jsonl --output reports/experiments/latest.json
 ```
 
-The provenance audit checks source domains, catalog and benchmark IDs, gold references, adjudication metadata, and split leakage. The experiment runner compares the configured resolver with three documented ablations, records policy and run metadata, and writes predictions plus evidence to a local JSON report. Only `gold_verified` rows are scored. Reports are ignored by Git by default.
+Checks official-source URL domains, duplicate IDs, temporal interval structure, gold clause/version references, adjudication metadata, and split leakage. A structural pass is not legal verification. See [Provenance audit](docs/PROVENANCE_AUDIT.md).
 
 ## Core docs
 
@@ -230,9 +235,12 @@ The provenance audit checks source domains, catalog and benchmark IDs, gold refe
 - [Dataset roadmap and unresolved decisions](docs/DECISIONS.md)
 - [Independent annotation and Cohen's kappa protocol](docs/ANNOTATION_PROTOCOL.md)
 - [Evaluation next steps](docs/EVALUATION_NEXT_STEPS.md)
+- [Illustrative evaluation notes](docs/ILLUSTRATIVE_EVAL.md)
+- [Verification status](docs/PENDING_TWO_PERSON_VERIFICATION.txt)
 - [Research evaluation protocol](docs/RESEARCH_EVALUATION.md)
 - [Architecture implementation status](docs/ARCHITECTURE_STATUS.md)
 - [Clause-level provenance and audit invariants](docs/PROVENANCE_AND_AUDIT.md)
+- [Resolution engine deep dive](docs/RESOLUTION_ENGINE.md)
 - [Obligation-version schema](schemas/obligation_version.schema.json)
 - [Benchmark item schema](schemas/benchmark_item.schema.json)
 - [Data validation CLI](src/taarr/dataset.py)
