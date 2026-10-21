@@ -84,6 +84,8 @@ These semantics must be applied consistently and recorded in adjudication notes.
 
 Recommended final benchmark size in the project documents: **100–200 items**. The initial corpus should be narrow and deep, beginning with the RBI KYC Master Direction and SEBI LODR Regulations, subject to confirming source-version feasibility.
 
+**Scope guardrail (added 2026-10-21):** "narrow and deep" is a real constraint, not a suggestion. New obligations must come from an instrument already in scope (currently: RBI KYC Master Direction, SEBI LODR Regulations) unless the project owner explicitly asks to widen the instrument list. A real, correctly-sourced clause from an out-of-scope instrument (e.g. RBI's NBFC Scale Based Regulation, which was added and then removed on 2026-10-21 for this reason) is still the wrong thing to add if nobody asked to widen scope -- it dilutes the "narrow and deep" dataset into a grab-bag and does not serve the paper's stated contribution. Before adding any new obligation, check it traces to an in-scope instrument first; do not add width for its own sake, even when real source text is easy to find.
+
 ## Validation and release
 
 Run:
