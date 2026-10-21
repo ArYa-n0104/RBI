@@ -201,6 +201,39 @@ def test_llm_crosscheck_uses_gemini_and_never_leaks_key(client, monkeypatch):
     assert all("llm_outcome" in row for row in payload["items"])
 
 
+def test_llm_crosscheck_falls_back_to_env_key(client, monkeypatch):
+    from taarr import api as api_module
+
+    monkeypatch.setenv("GEMINI_API_KEY", "env-fallback-key")
+    captured = {}
+
+    def fake_classify_with_gemini(*, api_key, obligation_id, catalog, entity_profile, reference_date, model, http_client):
+        captured["api_key"] = api_key
+        from taarr.llm_baseline import LlmClassification
+        return LlmClassification(outcome="Applicable", raw_text="LABEL: Applicable\nREASON: stub")
+
+    monkeypatch.setattr(api_module, "classify_with_gemini", fake_classify_with_gemini)
+
+    response = client.post("/api/v1/baseline/llm-crosscheck", json={"limit": 1})
+    assert response.status_code == 200
+    assert captured["api_key"] == "env-fallback-key"
+    assert "env-fallback-key" not in json.dumps(response.json())
+
+
+def test_llm_crosscheck_errors_clearly_with_no_key_anywhere(client, monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    response = client.post("/api/v1/baseline/llm-crosscheck", json={"limit": 1})
+    assert response.status_code == 422
+    assert "GEMINI_API_KEY" in response.json()["detail"]
+
+
+def test_health_reports_whether_gemini_key_is_configured(client, monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "some-key")
+    assert client.get("/api/v1/health").json()["gemini_api_key_configured"] is True
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    assert client.get("/api/v1/health").json()["gemini_api_key_configured"] is False
+
+
 def test_query_fails_closed_if_policy_is_unconfigured(monkeypatch):
     # The developer's local .env may configure the resolver; this test must
     # explicitly simulate a deployment where policy values are absent.

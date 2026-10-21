@@ -85,7 +85,7 @@ export function runBenchmark(): Promise<BenchmarkResponse> {
 }
 
 export function runLlmCrossCheck(input: {
-  api_key: string;
+  api_key?: string;
   limit: number;
   model?: string;
 }): Promise<LlmCrossCheckResponse> {

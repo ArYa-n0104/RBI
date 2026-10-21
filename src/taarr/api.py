@@ -69,13 +69,16 @@ class BenchmarkRunRequest(BaseModel):
 class LlmCrossCheckRequest(BaseModel):
     """An independent LLM read of the same gold benchmark items.
 
-    The api_key is forwarded to Google's Gemini API for this request only.
-    It is never written to disk, logged, or stored in app state.
+    If api_key is omitted, the server falls back to the GEMINI_API_KEY
+    environment variable (set it in .env, which is git-ignored and never
+    pushed). Either way, the key is forwarded to Google's Gemini API for
+    this request only -- it is never written to disk, logged, or stored in
+    app state.
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    api_key: str = Field(min_length=1, max_length=400)
+    api_key: str | None = Field(default=None, min_length=1, max_length=400)
     model: str = Field(default=DEFAULT_MODEL, max_length=100)
     limit: int = Field(default=10, ge=1, le=127)
 
@@ -249,6 +252,7 @@ def create_app(
             "service": "taarr-api",
             "policy_configured": app.state.resolver_policy is not None,
             "policy_required": app.state.resolver_policy is None,
+            "gemini_api_key_configured": bool(os.getenv("GEMINI_API_KEY", "").strip()),
             "catalog": {
                 "obligations": app.state.catalog.obligation_count,
                 "versions": app.state.catalog.version_count,
@@ -444,9 +448,19 @@ def create_app(
         entity facts, and the reference date -- so agreement with the gold
         label is a weak independent signal, not proof that TAARR is correct.
         It does not replace the project's required human two-person
-        verification. The supplied api_key is used for this request only and
-        is never persisted.
+        verification. The effective api_key (request body, or GEMINI_API_KEY
+        from .env as a fallback) is used for this request only and is never
+        persisted or logged.
         """
+        api_key = request.api_key or os.getenv("GEMINI_API_KEY", "").strip()
+        if not api_key:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "No Gemini API key was supplied and GEMINI_API_KEY is not set in .env. "
+                    "Either paste a key in the UI or add GEMINI_API_KEY=... to your local .env."
+                ),
+            )
         try:
             items = _load_gold_items(app.state.benchmark_path)
         except (OSError, ValueError) as exc:
@@ -465,7 +479,7 @@ def create_app(
                 except (KeyError, TypeError, ValueError):
                     continue
                 classification = classify_with_gemini(
-                    api_key=request.api_key,
+                    api_key=api_key,
                     obligation_id=item["target_obligation_id"],
                     catalog=app.state.catalog,
                     entity_profile=item.get("entity_profile", {}),
