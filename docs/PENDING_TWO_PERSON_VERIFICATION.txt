@@ -1,0 +1,98 @@
+TAARR PROJECT - PENDING ITEM: TWO-PERSON (DUAL-ANNOTATOR) VERIFICATION
+Status as of: 2026-10-21
+Status: ON HOLD (paused at the project owner's explicit request)
+Related decision record: docs/DECISIONS.md, entry D-005
+
+------------------------------------------------------------------------
+WHAT THIS IS
+------------------------------------------------------------------------
+
+This project's own rules (docs/ANNOTATION_PROTOCOL.md and
+docs/DATASET_SPEC.md) say a test question can only be called
+"gold_verified" -- a real, trustworthy answer key entry -- after:
+
+  1. Two DIFFERENT people each answer the question on their own,
+     without seeing the other person's answer.
+  2. Any disagreement between them is resolved by actually checking
+     the official RBI/SEBI text and writing down why one answer is
+     right.
+  3. The clause's source link, exact wording, and effective date are
+     also checked.
+
+This is called "dual annotation + adjudication" in the project docs.
+It is NOT the same as one person checking something carefully, even
+twice. The whole point is that a second, independent person can catch
+a mistake the first person did not notice.
+
+------------------------------------------------------------------------
+CURRENT STATUS
+------------------------------------------------------------------------
+
+- 60 real rules are loaded into the system (data/obligations/obligations.jsonl).
+- 127 draft test questions exist (data/benchmark/draft_items.jsonl).
+- 0 of those 127 are "gold_verified." The real answer-key file
+  (data/benchmark/benchmark.jsonl) is still empty by design.
+- What DOES exist: every rule has been independently re-checked by the
+  assistant alone, a second time, against the official government
+  page ("single_pass_reviewed" -- see D-005 in DECISIONS.md). This is
+  a real, useful check. It is still only ONE person's work, done
+  twice, not two different people.
+
+On 2026-10-21 the project owner (Aayushi) asked for this dataset to be
+verified, but explicitly declined to act as the first of the two
+required annotators ("exclude me from this role"). With no second
+person available, the two-person verification step is paused, not
+abandoned -- the system and the data are both ready for it the moment
+a second person is available.
+
+------------------------------------------------------------------------
+WHY THIS MATTERS -- WHAT DEPENDS ON IT
+------------------------------------------------------------------------
+
+Nothing else in the project is blocked by this being on hold. But a
+few specific things ARE blocked, and should not be attempted or
+claimed until it is resolved:
+
+1. No item can be marked "gold_verified."
+   The dataset validator (src/taarr/dataset.py) will not accept that
+   label without two recorded annotator outcomes plus an adjudication
+   record. This is enforced automatically, not just a guideline.
+
+2. No real accuracy, F1, or agreement (Cohen's kappa) numbers exist.
+   src/taarr/evaluate.py, experiments.py, and the benchmark-run API
+   endpoint only ever score rows with annotation_status ==
+   "gold_verified." With zero such rows, every metric is reported as
+   "null / not available," on purpose, instead of a fake zero or a
+   number based on unverified data.
+
+3. Evaluation against other methods (dense search, graph-based search,
+   etc.) cannot produce a real, defensible result yet.
+   It is possible to run those comparisons against the
+   "single_pass_reviewed" tier right now, but any such numbers must be
+   clearly labeled "illustrative, not the final verified result" in
+   any report or paper draft -- never presented as the real evaluation.
+
+4. The paper's results/evaluation section cannot be written with real
+   numbers until the step above produces them.
+
+In short: Phase 4 (dataset) cannot be marked fully done, and Phase 5
+(evaluation) cannot produce trustworthy final numbers, until this
+specific gap is closed.
+
+------------------------------------------------------------------------
+WHAT WOULD UNBLOCK IT
+------------------------------------------------------------------------
+
+Any ONE of the following would reopen this path:
+  - The project owner changes her mind and does a batch of simple
+    yes/no checks (the assistant can make these as easy as possible --
+    plain English, a handful at a time).
+  - A different second person (classmate, advisor, friend, co-author)
+    spends time independently answering a sample of the 127 draft
+    questions, without seeing the assistant's or the owner's answers
+    first.
+  - Any other genuinely independent second reviewer is found.
+
+Until then: this file exists so nobody forgets this gap is open, and
+so nobody accidentally writes "verified" or "gold" results into the
+paper that the data does not actually support yet.
