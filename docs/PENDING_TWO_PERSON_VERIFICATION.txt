@@ -1,7 +1,8 @@
 TAARR PROJECT - PENDING ITEM: TWO-PERSON (DUAL-ANNOTATOR) VERIFICATION
-Status as of: 2026-10-21 (updated same day, evening)
-Status: ANNOTATOR 1 DONE. STILL WAITING ON A SECOND, INDEPENDENT ANNOTATOR.
-Related decision records: docs/DECISIONS.md, entries D-005 and D-006
+Status as of: 2026-10-21 (updated same day, night)
+Status: ANNOTATOR 1 DONE FOR BOTH THE 60 RULES AND THE 127 QUESTIONS.
+         STILL WAITING ON A SECOND, INDEPENDENT ANNOTATOR FOR THE 127 QUESTIONS.
+Related decision records: docs/DECISIONS.md, entries D-005, D-006, D-007
 
 ------------------------------------------------------------------------
 WHAT THIS IS
@@ -44,13 +45,37 @@ CURRENT STATUS (changed today)
   "source_text_human_confirmed" -- a genuine, single human check of
   every source clause. See D-006 in DECISIONS.md.
 
-WHAT THIS DOES NOT YET DO: this verified the 60 SOURCE RULES
-(the clause text behind the system). It has not yet verified the 127
-BENCHMARK QUESTIONS (the query + date + entity + expected answer
-combinations built from those rules) -- that is a separate, later
-step, and it still needs a genuinely independent SECOND person, because
-one person (even doing real, careful work) is still only one
-annotator.
+ALSO NEW TODAY: a first genuine human annotation pass on the 127
+BENCHMARK QUESTIONS themselves (the query + date + entity + expected
+outcome combinations built from those rules -- a different, later step
+from checking the 60 source rules' text). 5 different people, each
+independently handling about 25 questions, were shown only the plain
+rule and the known facts (never the project's own hypothesis answer)
+and asked to decide the outcome themselves. Result: all 127 answers
+matched the project's existing hypothesis. Recorded as D-007 in
+DECISIONS.md, and as annotations.annotator_1 on every item in
+draft_items.jsonl.
+
+IMPORTANT CAVEAT on that 127/127 agreement: it is good news, but it is
+not proof the dataset is correct, and it is not yet "gold." The
+checklist gave reviewers the rule's exact condition and the exact
+facts needed to apply it, so most items were a fairly mechanical
+threshold check with one defensible answer -- agreement there was
+expected. On two items (the "small account" exemption, items 4 and 5),
+the checklist's own hint arguably pointed toward the same answer as the
+hypothesis rather than requiring independent discovery from the source
+text. The open legal question already on record for those two items
+(does paragraph 23's carve-out really reach paragraph 38(e)
+specifically) is still open.
+
+WHAT THIS DOES NOT YET DO: the project's own draft hypothesis has never
+counted, and still does not count, as one of the two required
+independent human annotators -- it is the thing being checked. Today's
+5-person pass is annotator_1. A second, DIFFERENT independent person or
+group still needs to answer the same 127 questions, blind to both the
+hypothesis and to annotator_1's answers, before any item can be
+dual_annotated. Only disagreement between the two HUMANS (not between
+a human and the hypothesis) gets adjudicated into gold_verified.
 
 ------------------------------------------------------------------------
 WHY THIS MATTERS -- WHAT DEPENDS ON IT
@@ -94,16 +119,20 @@ WHAT WOULD UNBLOCK IT NOW
 ------------------------------------------------------------------------
 
 Any ONE of the following would close this gap for good:
-  - A different, genuinely independent second person (classmate,
-    advisor, friend, co-author) answers a sample of the 127 draft
-    questions on their own, without seeing the owner's or the
-    assistant's answers first.
-  - The project owner does a second, separate pass over a sample of
-    the 127 draft questions herself, at a later date, without looking
-    back at her first answers -- this is weaker than a truly
-    independent second person, but is a documented option if no one
-    else is available.
+  - A different, genuinely independent second person or group (not
+    any of the 5 who already did annotator_1 today) answers the same
+    127 questions on their own, without seeing annotator_1's answers
+    or the project's own hypothesis first.
+  - The project owner, or the same 5 reviewers, do a second, separate
+    pass over the 127 questions at a later date, without looking back
+    at today's answers -- weaker than a genuinely different second
+    person, but a documented fallback if no one else is available.
   - Any other genuinely independent second reviewer is found.
+
+Once a second pass exists: compare it to annotator_1 (today's pass),
+not to the project's hypothesis. Agreement -> dual_annotated. Any
+disagreement -> adjudicate against the actual official text and record
+which answer is right and why -> gold_verified.
 
 Until then: this file exists so nobody forgets this gap is open, and
 so nobody accidentally writes "verified" or "gold" results into the
