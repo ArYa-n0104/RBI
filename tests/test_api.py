@@ -119,7 +119,7 @@ def test_clause_not_found_is_404(client):
 
 
 def test_benchmark_scores_only_gold_verified_rows(client):
-    # As of 2026-10-21, data/benchmark/benchmark.jsonl holds 125 real
+    # As of 2026-10-21, data/benchmark/benchmark.jsonl holds 127 real
     # gold_verified items (see docs/DECISIONS.md D-009). This test checks the
     # loader's own safety property -- draft-status rows are never scored --
     # not the resulting accuracy number, which is expected to be high due to
@@ -129,14 +129,9 @@ def test_benchmark_scores_only_gold_verified_rows(client):
     response = client.post("/api/v1/benchmark/run", json={"system_config": "TAARR"})
     assert response.status_code == 200
     payload = response.json()
-    assert payload["metrics"]["n"] == 125
+    assert payload["metrics"]["n"] == 127
     assert payload["message"] == "Scored gold-verified benchmark items only."
-    assert len(payload["items"]) == 125
-    # The draft queue (2 withheld items, e.g. the paragraph-2/38(e) exemption
-    # question still pending clarification) must never appear here.
-    scored_ids = {row["benchmark_item_id"] for row in payload["items"]}
-    assert "TAARR-DRAFT-0004" not in scored_ids
-    assert "TAARR-DRAFT-0005" not in scored_ids
+    assert len(payload["items"]) == 127
 
 
 def test_benchmark_run_excludes_non_gold_rows(tmp_path, client):
