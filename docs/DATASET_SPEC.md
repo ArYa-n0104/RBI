@@ -18,7 +18,11 @@ The `gold_outcome` field in a draft item is a **candidate hypothesis only**, not
 
 ### The `single_pass_reviewed` tier
 
-Some items go through one drafting-and-check round: the quoted clause text is compared against the official page, the outcome logic is written out explicitly, and the project owner reviews and approves both. This is a real, disclosed labeling tier — not a substitute for the project's two-independent-annotator protocol, and not a claim of inter-annotator agreement. `annotation_status = "single_pass_reviewed"` marks exactly this: source-checked, outcome logic explained, single-reviewer-approved. It is never scored as gold (`evaluate.py`/`experiments.py` only score `gold_verified` rows), and a paper reporting results from this project must describe `single_pass_reviewed` items as a distinct, lower-rigor tier if they are discussed at all — never folded into a claim of independently verified gold.
+**Meaning changed 2026-10-21 (see D-005 in DECISIONS.md).** Originally this tier meant: clause text checked against the official page, outcome logic written out, and the project owner reviewed and approved both. The owner has since opted out of any review role for the 2026-10-21 bulk-added obligations ("do the verification on your own ... exclude me from this role").
+
+From 2026-10-21 onward, `single_pass_reviewed` (and the matching catalog `verification_status`) means: **the assistant independently re-fetched the clause from the official source in a separate tool call and the two fetches agreed**, with any disagreement found corrected rather than hidden. It does **not** mean a human reviewed or approved it, and it is **not** the project's two-independent-annotator protocol. No inter-annotator agreement is implied or claimable from this tier.
+
+This is still a real, disclosed labeling tier, never scored as gold (`evaluate.py`/`experiments.py` only score `gold_verified` rows). A paper reporting results from this project must say plainly that the 2026-10-21 bulk-added obligations have had **no human legal review**, only a second independent automated source re-check — and must not fold `single_pass_reviewed` items into a claim of independently verified gold, inter-annotator agreement, or human-reviewed correctness.
 
 ## Required item fields
 

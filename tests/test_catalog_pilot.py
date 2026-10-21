@@ -371,8 +371,8 @@ BULK_BATCH_CASES = [
     ("SEBI-LODR-REG9-RECORD-PRESERVATION", date(2026, 8, 1), {'is_listed_entity': False}, Outcome.NOT_APPLICABLE),
     ("SEBI-LODR-REG2-1ZB-RELATED-PARTY-10PCT-THRESHOLD", date(2023, 5, 1), {'shareholder_equity_percentage': 15}, Outcome.APPLICABLE),
     ("SEBI-LODR-REG2-1ZB-RELATED-PARTY-10PCT-THRESHOLD", date(2023, 5, 1), {'shareholder_equity_percentage': 5}, Outcome.NOT_APPLICABLE),
-    ("SEBI-LODR-REG2-1ZC-RELATED-PARTY-20PCT-THRESHOLD", date(2026, 8, 1), {'shareholder_equity_percentage': 25}, Outcome.APPLICABLE),
-    ("SEBI-LODR-REG2-1ZC-RELATED-PARTY-20PCT-THRESHOLD", date(2026, 8, 1), {'shareholder_equity_percentage': 15}, Outcome.NOT_APPLICABLE),
+    ("SEBI-LODR-REG2-1ZB-RELATED-PARTY-20PCT-THRESHOLD", date(2026, 8, 1), {'shareholder_equity_percentage': 25}, Outcome.APPLICABLE),
+    ("SEBI-LODR-REG2-1ZB-RELATED-PARTY-20PCT-THRESHOLD", date(2026, 8, 1), {'shareholder_equity_percentage': 15}, Outcome.NOT_APPLICABLE),
 ]
 
 
