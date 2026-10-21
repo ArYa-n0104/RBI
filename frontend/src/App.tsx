@@ -152,7 +152,6 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [pageError, setPageError] = useState("");
   const [catalogError, setCatalogError] = useState("");
-  const [geminiApiKey, setGeminiApiKey] = useState("");
   const [crossCheckLimit, setCrossCheckLimit] = useState("10");
   const [crossCheckLoading, setCrossCheckLoading] = useState(false);
   const [crossCheckError, setCrossCheckError] = useState("");
@@ -239,10 +238,7 @@ export default function App() {
     setCrossCheckError("");
     try {
       const limit = Math.max(1, Math.min(127, Number(crossCheckLimit) || 10));
-      const trimmedKey = geminiApiKey.trim();
-      setCrossCheck(
-        await runLlmCrossCheck(trimmedKey ? { api_key: trimmedKey, limit } : { limit }),
-      );
+      setCrossCheck(await runLlmCrossCheck({ limit }));
     } catch (error) {
       setCrossCheckError(error instanceof Error ? error.message : "Cross-check run failed.");
     } finally {
@@ -625,42 +621,18 @@ export default function App() {
 
             <div className="query-layout">
               <form className="query-form" onSubmit={handleCrossCheck}>
-                {health?.gemini_api_key_configured ? (
-                  <div className="notice info-notice">
-                    A Gemini key is already configured on the server (<code>.env</code>). Leave the
-                    field below blank to use it, or paste a different key to override it for this run.
-                  </div>
-                ) : (
-                  <p className="form-footnote">
-                    No server-side key found. Paste one below, or add{" "}
-                    <code>GEMINI_API_KEY=...</code> to your local <code>.env</code> (git-ignored,
-                    never pushed) so this tab works without typing a key each time.
+                <div className="notice info-notice">
+                  <strong>Key and model come from your .env file</strong>
+                  <p>
+                    Put <code>GEMINI_API_KEY=...</code> and <code>GEMINI_MODEL=...</code> in the{" "}
+                    <code>.env</code> file in the project folder. It is re-read on every click, so a
+                    model change needs no restart.
+                    {health?.gemini_model ? <> Model at page load: <code>{health.gemini_model}</code>.</> : null}
                   </p>
-                )}
-                <label className="field-label" htmlFor="gemini-key">
-                  Gemini API key {health?.gemini_api_key_configured ? "(optional — overrides .env)" : ""}
-                </label>
-                <input
-                  id="gemini-key"
-                  type="password"
-                  autoComplete="off"
-                  value={geminiApiKey}
-                  onChange={(event) => setGeminiApiKey(event.target.value)}
-                  placeholder={
-                    health?.gemini_api_key_configured
-                      ? "Leave blank to use the server's .env key"
-                      : "Paste your own Gemini API key"
-                  }
-                  required={!health?.gemini_api_key_configured}
-                />
+                </div>
                 <p className="form-footnote">
-                  Sent only to the local TAARR backend for this one request, then forwarded
-                  directly to Google. Never written to disk, logged, or stored by this app. Get a
-                  key at{" "}
-                  <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">
-                    aistudio.google.com/app/apikey
-                  </a>
-                  .
+                  One click is <strong>one</strong> Gemini request, however many items you check:
+                  every item is sent together in a single call.
                 </p>
                 <label className="field-label" htmlFor="crosscheck-limit">
                   How many gold items to check (1–127)
@@ -676,13 +648,10 @@ export default function App() {
                 <button
                   className="primary-button"
                   type="submit"
-                  disabled={
-                    crossCheckLoading ||
-                    (!geminiApiKey.trim() && !health?.gemini_api_key_configured)
-                  }
+                  disabled={crossCheckLoading}
                 >
                   {crossCheckLoading ? (
-                    <><span className="spinner" /> Asking Gemini…</>
+                    <><span className="spinner" /> Asking Gemini (1 request)…</>
                   ) : (
                     <>Run cross-check <span>→</span></>
                   )}
@@ -695,7 +664,11 @@ export default function App() {
                     <div className="eyebrow">AGREEMENT WITH GOLD</div>
                     <h3>{crossCheck ? `${crossCheck.n} item(s) checked` : "Results appear here"}</h3>
                   </div>
-                  {crossCheck && <span className="date-chip">Model: {crossCheck.model}</span>}
+                  {crossCheck && (
+                    <span className="date-chip">
+                      Model: {crossCheck.model} · {crossCheck.api_calls ?? 1} API call
+                    </span>
+                  )}
                 </div>
 
                 {crossCheckError && (
@@ -710,8 +683,8 @@ export default function App() {
                     <div className="empty-icon">⇄</div>
                     <h3>Two independent readers, one clause</h3>
                     <p>
-                      Paste a Gemini API key and run the check to see how often an independent
-                      language model agrees with TAARR&apos;s gold-verified answers.
+                      Run the check to see how often an independent language model agrees with
+                      TAARR&apos;s gold-verified answers. It uses one Gemini request per click.
                     </p>
                   </div>
                 )}

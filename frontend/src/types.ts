@@ -7,6 +7,7 @@ export interface HealthResponse {
   policy_required: boolean;
   gemini_api_key_configured: boolean;
   gemini_model?: string;
+  env_file_found?: boolean;
   catalog: {
     obligations: number;
     versions: number;
@@ -116,6 +117,7 @@ export interface LlmCrossCheckItem {
 
 export interface LlmCrossCheckResponse {
   model: string;
+  api_calls?: number;
   n: number;
   agreement_with_gold: BenchmarkMetric;
   items: LlmCrossCheckItem[];
@@ -145,6 +147,7 @@ export interface FactExtractionResponse {
   evidence: Record<string, string>;
   rejected: Array<{ key: string; reason: string }>;
   unrecognised: string[];
+  model?: string;
   notice: string;
 }
 

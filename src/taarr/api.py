@@ -25,7 +25,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .catalog import Catalog, load_catalog
 from .fact_extraction import DEFAULT_REGISTRY_PATH, extract_facts, load_fact_registry
-from .llm_baseline import classify_with_gemini, default_model
+from .llm_baseline import classify_batch_with_gemini, default_model
 from .models import (
     MissingFactsPolicy,
     NoVersionPolicy,
@@ -34,6 +34,7 @@ from .models import (
     UnknownPrecedencePolicy,
 )
 from .reasoning import resolve_obligation
+from .settings import env_file_path, gemini_api_key
 
 STOP_WORDS = {
     "a", "an", "and", "are", "as", "at", "be", "by", "does", "for", "from",
@@ -41,6 +42,11 @@ STOP_WORDS = {
     "the", "their", "this", "to", "what", "when", "which", "with", "would",
 }
 
+
+NO_KEY_DETAIL = (
+    "No Gemini API key found. Add GEMINI_API_KEY=... to the .env file in the project folder "
+    "and click again (no restart needed). You can still answer the questions yourself."
+)
 
 POLICY_NOT_CONFIGURED_DETAIL = (
     "Resolution policy is not configured. Set TAARR_NO_VERSION_POLICY, "
@@ -285,8 +291,9 @@ def create_app(
             "service": "taarr-api",
             "policy_configured": app.state.resolver_policy is not None,
             "policy_required": app.state.resolver_policy is None,
-            "gemini_api_key_configured": bool(os.getenv("GEMINI_API_KEY", "").strip()),
+            "gemini_api_key_configured": bool(gemini_api_key()),
             "gemini_model": default_model(),
+            "env_file_found": env_file_path() is not None,
             "catalog": {
                 "obligations": app.state.catalog.obligation_count,
                 "versions": app.state.catalog.version_count,
@@ -482,15 +489,9 @@ def create_app(
         from .env as a fallback) is used for this request only and is never
         persisted or logged.
         """
-        api_key = request.api_key or os.getenv("GEMINI_API_KEY", "").strip()
+        api_key = request.api_key or gemini_api_key()
         if not api_key:
-            raise HTTPException(
-                status_code=422,
-                detail=(
-                    "No Gemini API key was supplied and GEMINI_API_KEY is not set in .env. "
-                    "Either paste a key in the UI or add GEMINI_API_KEY=... to your local .env."
-                ),
-            )
+            raise HTTPException(status_code=422, detail=NO_KEY_DETAIL)
         try:
             items = _load_gold_items(app.state.benchmark_path)
         except (OSError, ValueError) as exc:
@@ -499,39 +500,58 @@ def create_app(
         if not items:
             raise HTTPException(status_code=404, detail="No gold-verified benchmark items are available.")
 
+        usable: list[dict[str, Any]] = []
+        for item in items:
+            try:
+                reference_date = date.fromisoformat(item["reference_date"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            usable.append({**item, "_reference_date": reference_date})
+
+        batch = [
+            {
+                "obligation_id": item["target_obligation_id"],
+                "entity_profile": item.get("entity_profile", {}),
+                "reference_date": item["_reference_date"],
+            }
+            for item in usable
+        ]
+        # ONE Gemini request for every selected item (not one per item).
+        shared = app.state.http_client
+        if shared is not None:
+            classifications, batch_error = classify_batch_with_gemini(
+                api_key=api_key, items=batch, catalog=app.state.catalog,
+                http_client=shared, model=request.model,
+            )
+        else:
+            with httpx.Client() as client:
+                classifications, batch_error = classify_batch_with_gemini(
+                    api_key=api_key, items=batch, catalog=app.state.catalog,
+                    http_client=client, model=request.model,
+                )
+        if batch_error:
+            raise HTTPException(status_code=502, detail=batch_error)
+
         rows: list[dict[str, Any]] = []
         gold_labels: list[str] = []
         llm_labels: list[str | None] = []
-        with httpx.Client() as client:
-            for item in items:
-                try:
-                    reference_date = date.fromisoformat(item["reference_date"])
-                except (KeyError, TypeError, ValueError):
-                    continue
-                classification = classify_with_gemini(
-                    api_key=api_key,
-                    obligation_id=item["target_obligation_id"],
-                    catalog=app.state.catalog,
-                    entity_profile=item.get("entity_profile", {}),
-                    reference_date=reference_date,
-                    model=request.model,
-                    http_client=client,
-                )
-                gold = item["gold_outcome"]
-                gold_labels.append(gold)
-                llm_labels.append(classification.outcome)
-                rows.append({
-                    "benchmark_item_id": item["benchmark_item_id"],
-                    "target_obligation_id": item["target_obligation_id"],
-                    "gold_outcome": gold,
-                    "llm_outcome": classification.outcome,
-                    "agrees_with_gold": classification.outcome == gold,
-                    "llm_raw_text": classification.raw_text,
-                    "error": classification.error,
-                })
+        for item, classification in zip(usable, classifications, strict=True):
+            gold = item["gold_outcome"]
+            gold_labels.append(gold)
+            llm_labels.append(classification.outcome)
+            rows.append({
+                "benchmark_item_id": item["benchmark_item_id"],
+                "target_obligation_id": item["target_obligation_id"],
+                "gold_outcome": gold,
+                "llm_outcome": classification.outcome,
+                "agrees_with_gold": classification.outcome == gold,
+                "llm_raw_text": classification.raw_text,
+                "error": classification.error,
+            })
 
         return {
             "model": request.model,
+            "api_calls": 1,
             "n": len(rows),
             "agreement_with_gold": _classification_metrics(gold_labels, llm_labels),
             "items": rows,
@@ -665,13 +685,9 @@ def create_app(
         user's own text. It never decides applicability -- the user reviews the
         facts and the deterministic resolver does the rest.
         """
-        api_key = request.api_key or os.getenv("GEMINI_API_KEY", "").strip()
+        api_key = request.api_key or gemini_api_key()
         if not api_key:
-            raise HTTPException(
-                status_code=422,
-                detail="No Gemini API key was supplied and GEMINI_API_KEY is not set in .env. "
-                "You can still answer the questions by hand.",
-            )
+            raise HTTPException(status_code=422, detail=NO_KEY_DETAIL)
         shared = app.state.http_client
         if shared is not None:
             result = extract_facts(
@@ -691,6 +707,7 @@ def create_app(
             "evidence": result.evidence,
             "rejected": result.rejected,
             "unrecognised": result.unrecognised,
+            "model": result.model,
             "notice": "Please review these answers. Anything not stated in your text was left blank, not guessed.",
         }
 

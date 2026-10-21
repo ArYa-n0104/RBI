@@ -21,16 +21,22 @@ const EXAMPLES: Array<{ label: string; text: string }> = [
   {
     label: "NBFC onboarding over an app",
     text:
-      "We are an NBFC regulated by the RBI. We onboard individual customers through our app "
-      + "without meeting them face to face, and some of them are rated high risk. We do not use "
-      + "video based identification (V-CIP) yet.",
+      "We are an NBFC regulated by the RBI. Our customer is an individual. We onboard customers "
+      + "without meeting them face to face through our mobile app. We do not use video based "
+      + "identification (V-CIP). The customer is rated high risk.",
   },
   {
-    label: "Bank with small accounts",
+    label: "Bank with V-CIP, small account",
     text:
-      "We are a bank regulated by the RBI. We open small accounts for walk-in customers, we use "
-      + "video based identification (V-CIP) for onboarding, and our customers are individuals "
-      + "rated low risk.",
+      "We are a bank regulated by the RBI. The customer is an individual walk-in customer. We "
+      + "onboard customers using video based identification (V-CIP). The account is a small "
+      + "account. The customer is rated low risk.",
+  },
+  {
+    label: "Cash transaction, walk-in",
+    text:
+      "We are a bank regulated by the RBI. The customer is an individual walk-in customer who is "
+      + "not an account holder. The transaction amount is 60000 rupees in cash.",
   },
   {
     label: "Listed company, board questions",
@@ -205,6 +211,9 @@ function ResultRow({
       <div className="cl-row-main">
         <div>
           <p className="cl-row-action">{modalityLine(row)}</p>
+          {row.clause_summary && row.action && (
+            <p className="cl-row-summary">{row.clause_summary}</p>
+          )}
           <div className="cl-row-tags">
             <span className="cl-tag">{row.regulator ?? "—"}</span>
             {row.clause_id && <span className="cl-tag mono">{row.clause_id}</span>}
@@ -276,8 +285,7 @@ export default function Checklist({
   const [description, setDescription] = useState("");
   const [referenceDate, setReferenceDate] = useState(todayIso());
   const [regulator, setRegulator] = useState<"" | "RBI" | "SEBI">("");
-  const [apiKey, setApiKey] = useState("");
-  const [showKeyField, setShowKeyField] = useState(false);
+  const [usedModel, setUsedModel] = useState("");
 
   const [answers, setAnswers] = useState<Answers>({});
   const [evidence, setEvidence] = useState<Record<string, string>>({});
@@ -381,8 +389,9 @@ export default function Checklist({
     setExtractError("");
     setExtractNote("");
     try {
-      const key = apiKey.trim();
-      const payload = await extractFacts(key ? { description: text, api_key: key } : { description: text });
+      // One click = one Gemini request. Key and model are read from .env on the server.
+      const payload = await extractFacts({ description: text });
+      if (payload.model) setUsedModel(payload.model);
       setAnswers((prior) => ({ ...prior, ...(payload.facts as Answers) }));
       setEvidence((prior) => ({ ...prior, ...payload.evidence }));
       const filled = Object.keys(payload.facts).length;
@@ -392,7 +401,8 @@ export default function Checklist({
           ? "Your text did not clearly state any of the questions below, so nothing was filled in. Please answer them yourself."
           : `Filled in ${filled} answer${filled === 1 ? "" : "s"} from your text.`
             + (skipped > 0 ? ` ${skipped} guess${skipped === 1 ? " was" : "es were"} dropped as unsupported.` : "")
-            + " Please check each one before continuing.",
+            + " Please check each one before continuing."
+            + (payload.model ? ` (Model: ${payload.model})` : ""),
       );
       const touched = Object.keys(payload.facts)
         .map((key2) => factMap.get(key2)?.group)
@@ -562,20 +572,13 @@ export default function Checklist({
           </div>
 
           {!geminiConfigured && (
-            <div className="cl-key-block">
-              <button type="button" className="cl-link-button" onClick={() => setShowKeyField((v) => !v)}>
-                {showKeyField ? "Hide the key box" : "Have a Gemini API key? Use it to autofill"}
-              </button>
-              {showKeyField && (
-                <input
-                  className="text-input"
-                  type="password"
-                  autoComplete="off"
-                  placeholder="Paste your Gemini API key (used for this request only)"
-                  value={apiKey}
-                  onChange={(event) => setApiKey(event.target.value)}
-                />
-              )}
+            <div className="notice info-notice">
+              <strong>Autofill needs a Gemini key in your .env file</strong>
+              <p>
+                Add <code>GEMINI_API_KEY=...</code> and <code>GEMINI_MODEL=...</code> to the{" "}
+                <code>.env</code> file in the project folder and save it. No restart is needed —
+                the file is read again each time you click. Or just answer the questions yourself.
+              </p>
             </div>
           )}
 
@@ -591,7 +594,7 @@ export default function Checklist({
             <button
               type="button"
               className="primary-button"
-              disabled={extracting || (!geminiConfigured && !apiKey.trim())}
+              disabled={extracting}
               onClick={() => void handleExtract()}
             >
               {extracting ? <span className="spinner" /> : null}
@@ -605,7 +608,8 @@ export default function Checklist({
           <p className="form-footnote">
             Autofill only fills in this form from your own words, and must quote you for every
             answer it gives. It never decides whether a rule applies — the rule engine does that.
-            {modelName ? <> Model: <code>{modelName}</code>.</> : null}
+            {" "}One click is one Gemini request.
+            {usedModel || modelName ? <> Model: <code>{usedModel || modelName}</code>.</> : null}
           </p>
         </div>
       )}

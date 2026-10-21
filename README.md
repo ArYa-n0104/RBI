@@ -137,16 +137,34 @@ The UI opens on **Check my rules**, the guided flow for someone who does not kno
 
 Endpoints behind it: `GET /api/v1/facts`, `POST /api/v1/facts/extract`, `POST /api/v1/checklist`.
 
-### Choosing the Gemini model
+### Gemini key, model and API usage
 
-Both the autofill and the cross-check call the model named by `GEMINI_MODEL` in `.env`
-(default `gemini-2.5-flash-lite`). If that model hits its free-tier rate limit, change the
-line to another model such as `gemini-2.5-flash` or `gemini-2.0-flash` and restart the
-backend — no code change is needed. `GET /api/v1/health` reports the model in use.
+Gemini is used in exactly two places, and each click is exactly one API request:
+
+| Where | Requests per click |
+|---|---|
+| *Check my rules* → **Autofill the answers** | 1 |
+| *AI cross-check* → **Run cross-check** | 1 (all selected items go in one batched request) |
+
+Nothing else calls Gemini — the checklist, its live re-runs, the reasoning console, the
+clause explorer and the benchmark are all deterministic and local.
+
+Both settings live in `.env` in the repository root:
+
+```
+GEMINI_API_KEY=your-key
+GEMINI_MODEL=gemini-3.5-flash-lite
+```
+
+`.env` is re-read on every click, so after a rate limit you can change `GEMINI_MODEL`,
+save, and click again without restarting the backend. A value in `.env` wins over the same
+variable exported in your shell. Use an exact model ID from ai.google.dev/models — see
+`.env.example` for the current list (for example `gemini-3.1-flash` does not exist, and the
+`gemini-2.0-*` models are shut down). `GET /api/v1/health` reports the model in use.
 
 ### AI cross-check (optional B6 baseline)
 
-The fourth tab lets you paste your own Gemini API key and ask an independent LLM to read the same clause text and entity facts as TAARR — without ever seeing TAARR's own answer — then compares its outcome against the gold label. The key is sent only to your local backend for that one request, forwarded to Google, and never written to disk or logged. This is a fast, convenient sanity check; it is **not** a substitute for the project's required two-person human verification (`docs/ANNOTATION_PROTOCOL.md`). See `docs/RESEARCH_EVALUATION.md` for the B6 baseline definition.
+The fifth tab uses the key from `.env` to ask an independent LLM to read the same clause text and entity facts as TAARR — without ever seeing TAARR's own answer — then compares its outcome against the gold label. The key is sent only to your local backend for that one request, forwarded to Google, and never written to disk or logged. This is a fast, convenient sanity check; it is **not** a substitute for the project's required two-person human verification (`docs/ANNOTATION_PROTOCOL.md`). See `docs/RESEARCH_EVALUATION.md` for the B6 baseline definition.
 
 ### Run checks
 

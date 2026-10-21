@@ -181,12 +181,13 @@ def test_llm_crosscheck_uses_gemini_and_never_leaks_key(client, monkeypatch):
 
     captured = {}
 
-    def fake_classify_with_gemini(*, api_key, obligation_id, catalog, entity_profile, reference_date, model, http_client):
+    def fake_batch(*, api_key, items, catalog, http_client, model):
         captured["api_key"] = api_key
         from taarr.llm_baseline import LlmClassification
-        return LlmClassification(outcome="Applicable", raw_text="LABEL: Applicable\nREASON: stub")
+        return [LlmClassification(outcome="Applicable", raw_text="LABEL: Applicable\nREASON: stub")
+                for _ in items], None
 
-    monkeypatch.setattr(api_module, "classify_with_gemini", fake_classify_with_gemini)
+    monkeypatch.setattr(api_module, "classify_batch_with_gemini", fake_batch)
 
     response = client.post(
         "/api/v1/baseline/llm-crosscheck",
@@ -207,12 +208,13 @@ def test_llm_crosscheck_falls_back_to_env_key(client, monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "env-fallback-key")
     captured = {}
 
-    def fake_classify_with_gemini(*, api_key, obligation_id, catalog, entity_profile, reference_date, model, http_client):
+    def fake_batch(*, api_key, items, catalog, http_client, model):
         captured["api_key"] = api_key
         from taarr.llm_baseline import LlmClassification
-        return LlmClassification(outcome="Applicable", raw_text="LABEL: Applicable\nREASON: stub")
+        return [LlmClassification(outcome="Applicable", raw_text="LABEL: Applicable\nREASON: stub")
+                for _ in items], None
 
-    monkeypatch.setattr(api_module, "classify_with_gemini", fake_classify_with_gemini)
+    monkeypatch.setattr(api_module, "classify_batch_with_gemini", fake_batch)
 
     response = client.post("/api/v1/baseline/llm-crosscheck", json={"limit": 1})
     assert response.status_code == 200

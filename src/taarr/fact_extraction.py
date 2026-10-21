@@ -26,7 +26,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from .llm_baseline import DEFAULT_TIMEOUT_SECONDS, HttpClient, default_model, generate_text
+from .llm_baseline import (
+    DEFAULT_TIMEOUT_SECONDS,
+    HttpClient,
+    default_model,
+    generate_text,
+    generation_config,
+)
 
 DEFAULT_REGISTRY_PATH = "data/facts/fact_registry.json"
 MAX_DESCRIPTION_CHARS = 3_000
@@ -45,6 +51,7 @@ class ExtractionResult:
     rejected: list[dict[str, str]] = field(default_factory=list)
     unrecognised: list[str] = field(default_factory=list)
     error: str | None = None
+    model: str = ""
 
 
 def load_fact_registry(path: str | Path = DEFAULT_REGISTRY_PATH) -> FactRegistry:
@@ -195,19 +202,22 @@ def extract_facts(
     if len(description) > MAX_DESCRIPTION_CHARS:
         return ExtractionResult(error=f"Description is too long (limit {MAX_DESCRIPTION_CHARS} characters).")
 
+    model = model or default_model()
     payload = {
         "contents": [{"parts": [{"text": build_prompt(description, registry)}]}],
-        "generationConfig": {
-            "temperature": 0.0,
-            "maxOutputTokens": 1500,
-            "responseMimeType": "application/json",
-            "responseSchema": response_schema(registry),
-        },
+        "generationConfig": generation_config(
+            model,
+            max_output_tokens=8_192,
+            responseMimeType="application/json",
+            responseSchema=response_schema(registry),
+        ),
     }
+    # Exactly one API call per autofill click: generate_text never retries.
     raw_text, error = generate_text(
-        api_key=api_key, model=model or default_model(), payload=payload,
-        http_client=http_client, timeout=timeout,
+        api_key=api_key, model=model, payload=payload, http_client=http_client, timeout=timeout,
     )
     if raw_text is None:
-        return ExtractionResult(error=error)
-    return validate_extraction(raw_text, description, registry)
+        return ExtractionResult(error=error, model=model)
+    result = validate_extraction(raw_text, description, registry)
+    result.model = model
+    return result
